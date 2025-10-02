@@ -25,11 +25,12 @@ install.packages("gridExtra")
 
 # Read data ---------------------------------------------------------------
 {
-  exp.data <- read.csv("Data/06_Dataset_final_PCBmass.csv")
+  exp.data <- read.csv("Data/uncoated_biochar_V2.csv")
   # Select individual congener from datasets
   pcb.ind <- "PCB_19"
   # Extract relevant columns
-  pcbi <- exp.data[, c("ID", "Group", "time", "Sample_medium", pcb.ind)]
+  pcbi <- exp.data[, c("Sample_medium", "Experiment", "percent_biochar",
+                       "Group", "Time", "Replicate", pcb.ind)]
 }
 
 # Organize data -----------------------------------------------------------
@@ -37,17 +38,21 @@ install.packages("gridExtra")
   pcbi <- pcbi[!is.na(pcbi$PCB_19), ]
   # Pull congener-specific data from the dataset without averaging
   # Select SPME control samples
-  pcbi.spme.control <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Control", Sample_medium == "SPME") %>%
-    rename("mf_Control" = PCB_19)
-  # Select SPME treatment samples
-  pcbi.spme.treatment <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "SPME") %>%
-    rename("mf_Treatment" = PCB_19)
+  pcbi.spme.t.control_0 <- pcbi %>%
+    filter(Sample_medium == "SPME", Experiment == "biochar_timeseries",
+           Group == "Control", percent_biochar == 0.0) %>%
+    rename("mf_t.control_0" = PCB_19)
+  pcbi.spme.p.control_0 <- pcbi %>%
+    filter(Sample_medium == "SPME", Experiment == "biochar_percentage",
+           Group == "Control", percent_biochar == 0.0) %>%
+    rename("mf_p.control_0" = PCB_19)
+  
   # Select PUF control samples
-  pcbi.puf.control <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Control", Sample_medium == "PUF") %>%
-    rename("mpuf_Control" = PCB_19)
+  pcbi.puf.t.control_0 <- pcbi %>%
+    filter(Sample_medium == "PUF", Experiment == "biochar_timeseries",
+           Group == "Control", percent_biochar == 0.0) %>%
+    rename("mpuf_t.control" = PCB_19)
+  
   # Select PUF treatment samples
   pcbi.puf.treatment <- pcbi %>%
     filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "PUF") %>%
