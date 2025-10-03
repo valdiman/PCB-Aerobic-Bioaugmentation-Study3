@@ -138,7 +138,7 @@ rtm.PCB19 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed)
+  ksed <- 10^(logksed) * 1.2 # 10% more due to movement of the system
   
   # Bioremediation rate
   kb <- parms$kb
@@ -156,7 +156,7 @@ rtm.PCB19 = function(t, state, parms){
   Cpuf <- state[6]
   
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater
-  dCpwdt <- ksed * Vs / Vpw * (Cs - Cpw) -
+  dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
     kpw * Aws / Vpw * (Cpw - Cw) -
     kb * Cpw
   dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
@@ -181,7 +181,7 @@ rtm.PCB19 = function(t, state, parms){
   Cs0 <- Ct * M # [ng/L]
 }
 cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 500, ko = 6, kb = 0) # Input
+parms <- list(ro = 510, ko = 10, kb = 0) # Input 500/540 non-shaking/shaking
 t.1 <- unique(pcb_combined_control$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB19, parms = parms)
@@ -278,7 +278,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  write.csv(model_results_daily_clean, file = "Output/Data/RTM/NS/NBH/PCB19NBHControlFV.csv")
+  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB19Control.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%
@@ -334,6 +334,6 @@ head(out.1)
 p.19 <- grid.arrange(p_mf, p_mpuf, ncol = 2)
 
 # Save plot in folder
-ggsave("Output/Plots/RTM/NS/NBH/PCB19NBH_NS_ControlFV.png", plot = p.19, width = 6,
+ggsave("Output/Plots/RTM/PCB19Control.png", plot = p.19, width = 6,
        height = 5, dpi = 500)
 
