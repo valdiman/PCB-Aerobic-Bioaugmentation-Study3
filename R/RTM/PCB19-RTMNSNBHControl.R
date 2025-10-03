@@ -30,56 +30,36 @@ install.packages("gridExtra")
   pcb.ind <- "PCB_19"
   # Extract relevant columns
   pcbi <- exp.data[, c("Sample_medium", "Experiment", "percent_biochar",
-                       "Group", "Time", "Replicate", pcb.ind)]
+                       "Group", "time", "Replicate", pcb.ind)]
 }
 
 # Organize data -----------------------------------------------------------
 {
-  pcbi <- pcbi[!is.na(pcbi$PCB_19), ]
+  # Using time series experiments
   # Pull congener-specific data from the dataset without averaging
   # Select SPME control samples
-  pcbi.spme.t.control_0 <- pcbi %>%
+  pcbi.spme.control <- pcbi %>%
     filter(Sample_medium == "SPME", Experiment == "biochar_timeseries",
            Group == "Control", percent_biochar == 0.0) %>%
-    rename("mf_t.control_0" = PCB_19)
-  pcbi.spme.p.control_0 <- pcbi %>%
-    filter(Sample_medium == "SPME", Experiment == "biochar_percentage",
-           Group == "Control", percent_biochar == 0.0) %>%
-    rename("mf_p.control_0" = PCB_19)
+    rename("mf_control" = PCB_19)
   
   # Select PUF control samples
-  pcbi.puf.t.control_0 <- pcbi %>%
+  pcbi.puf.control <- pcbi %>%
     filter(Sample_medium == "PUF", Experiment == "biochar_timeseries",
            Group == "Control", percent_biochar == 0.0) %>%
-    rename("mpuf_t.control" = PCB_19)
+    rename("mpuf_control" = PCB_19)
   
-  # Select PUF treatment samples
-  pcbi.puf.treatment <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "PUF") %>%
-    rename("mpuf_Treatment" = PCB_19)
   # Combine the mf and mpuf data for Control
   pcb_combined_control <- cbind(
     pcbi.spme.control %>%
-      select(time, mf_Control),
+      select(time, mf_control),
     pcbi.puf.control %>%
-      select(mpuf_Control)
+      select(mpuf_control)
   )
   # Add a row for time = 0
   pcb_combined_control <- rbind(
-    data.frame(time = 0, mf_Control = 0, mpuf_Control = 0),
+    data.frame(time = 0, mf_control = 0, mpuf_control = 0),
     pcb_combined_control
-  )
-  # Combine the mf and mpuf data for Treatment
-  pcb_combined_treatment <- cbind(
-    pcbi.spme.treatment %>%
-      select(time, mf_Treatment),
-    pcbi.puf.treatment %>%
-      select(mpuf_Treatment)
-  )
-  # Add a row for time = 0 if needed
-  pcb_combined_treatment <- rbind(
-    data.frame(time = 0, mf_Treatment = 0, mpuf_Treatment = 0),
-    pcb_combined_treatment
   )
 }
 
@@ -234,7 +214,7 @@ head(out.1)
   
   # Ensure observed data is in a tibble
   observed_data <- as_tibble(pcb_combined_control) %>%
-    select(time, mf_Control, mpuf_Control)
+    select(time, mf_control, mpuf_control)
   
   # Convert model results to tibble and select relevant columns
   model_results <- as_tibble(df.1) %>%
@@ -250,9 +230,9 @@ head(out.1)
     group_by(time) %>%  # Adjust the grouping variable if needed
     summarise(
       avg_mf_model = mean(mf, na.rm = TRUE),
-      avg_mf_observed = mean(mf_Control, na.rm = TRUE),
+      avg_mf_observed = mean(mf_control, na.rm = TRUE),
       avg_mpuf_model = mean(mpuf, na.rm = TRUE),
-      avg_mpuf_observed = mean(mpuf_Control, na.rm = TRUE)
+      avg_mpuf_observed = mean(mpuf_control, na.rm = TRUE)
     )
   
   # Define function to calculate R-squared, handling NA values
@@ -279,7 +259,7 @@ head(out.1)
   # Plot
   # Run the model with the new time sequence
   cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
-  t_daily <- seq(0, 80, by = 1)  # Adjust according to your needs
+  t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
   out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB19,
                    parms = parms)
   head(out_daily)
@@ -309,12 +289,12 @@ head(out.1)
   
   # Clean observed data and prepare for plotting
   observed_data_clean <- observed_data %>%
-    pivot_longer(cols = c(mf_Control, mpuf_Control), 
+    pivot_longer(cols = c(mf_control, mpuf_control), 
                  names_to = "variable", 
                  values_to = "observed_value") %>%
     mutate(variable = recode(variable, 
-                             "mf_Control" = "mf", 
-                             "mpuf_Control" = "mpuf"),
+                             "mf_control" = "mf", 
+                             "mpuf_control" = "mpuf"),
            type = "Observed")
   
   plot_data_daily <- bind_rows(
