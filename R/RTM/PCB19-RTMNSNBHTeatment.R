@@ -1,5 +1,5 @@
 # Code to model PCB 19 in laboratory experiments
-# using sediment from NBH. Passive measurements
+# using sediment from Altavista, VI. Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
 # samplers.
@@ -29,52 +29,36 @@ install.packages("gridExtra")
   # Select individual congener from datasets
   pcb.ind <- "PCB_19"
   # Extract relevant columns
-  pcbi <- exp.data[, c("Sample_medium", "percent_biochar", "Group", "Time",
-                       "Replicate", pcb.ind)]
+  pcbi <- exp.data[, c("Sample_medium", "Experiment", "percent_biochar",
+                       "Group", "time", "Replicate", pcb.ind)]
 }
 
 # Organize data -----------------------------------------------------------
 {
-  pcbi <- pcbi[!is.na(pcbi$PCB_19), ]
+  # Using time series experiments
   # Pull congener-specific data from the dataset without averaging
   # Select SPME control samples
-  pcbi.spme.control <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Control", Sample_medium == "SPME") %>%
-    rename("mf_Control" = PCB_19)
-  # Select SPME treatment samples
   pcbi.spme.treatment <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "SPME") %>%
-    rename("mf_Treatment" = PCB_19)
+    filter(Sample_medium == "SPME", Experiment == "biochar_timeseries",
+           Group == "Treatment", percent_biochar == 0.0) %>%
+    rename("mf_treatment" = PCB_19)
+  
   # Select PUF control samples
-  pcbi.puf.control <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Control", Sample_medium == "PUF") %>%
-    rename("mpuf_Control" = PCB_19)
-  # Select PUF treatment samples
   pcbi.puf.treatment <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "PUF") %>%
-    rename("mpuf_Treatment" = PCB_19)
-  # Combine the mf and mpuf data for Control
-  pcb_combined_control <- cbind(
-    pcbi.spme.control %>%
-      select(time, mf_Control),
-    pcbi.puf.control %>%
-      select(mpuf_Control)
-  )
-  # Add a row for time = 0
-  pcb_combined_control <- rbind(
-    data.frame(time = 0, mf_Control = 0, mpuf_Control = 0),
-    pcb_combined_control
-  )
+    filter(Sample_medium == "PUF", Experiment == "biochar_timeseries",
+           Group == "Treatment", percent_biochar == 0.0) %>%
+    rename("mpuf_treatment" = PCB_19)
+  
   # Combine the mf and mpuf data for Treatment
   pcb_combined_treatment <- cbind(
     pcbi.spme.treatment %>%
-      select(time, mf_Treatment),
+      select(time, mf_treatment),
     pcbi.puf.treatment %>%
-      select(mpuf_Treatment)
+      select(mpuf_treatment)
   )
-  # Add a row for time = 0 if needed
+  # Add a row for time = 0
   pcb_combined_treatment <- rbind(
-    data.frame(time = 0, mf_Treatment = 0, mpuf_Treatment = 0),
+    data.frame(time = 0, mf_treatment = 0, mpuf_treatment = 0),
     pcb_combined_treatment
   )
 }
@@ -95,7 +79,7 @@ rtm.PCB19 = function(t, state, parms){
   # Bioreactor parameters
   Vw <- 100 # cm3 water volume
   Vpw <- 4 # cm3 porewater volume
-  Va <- 125 # cm3 headspace volume
+  Va <- 125 # cm3 headspace volumne
   Aaw <- 20 # cm2 
   Aws <- 30 # cm2
   Apw <- 1166000 # [cm2]
@@ -154,22 +138,10 @@ rtm.PCB19 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed)
-  
-  # Add PCB sorption to LB400 (~ bioavailability factor)
-  # General partition coefficient obtained from protein, lipid and
-  # phospholipids %s
-  # From UFZ-LSER database (calculate the biopartitioning)
-  # 60 % protein, 5 % lipids, 5 % phospholipids, 30 % water
-  Klb400 <- 10^(4.28) # [Lw/Lcell]
-  Clb400 <- 0.8 * 8 * 10^8 # [cell/mL]
-  Vlb400 <- 1 # [um3/cell]
-  Mlb400 <- Clb400 * Vlb400 * 10^-12# [Llb400/Lw]
-  B <- Vw / (Vw + Klb400 * Mlb400 * 100)
+  ksed <- 10^(logksed) * 1.2 # 10% more due to movement of the system
   
   # Bioremediation rate
   kb <- parms$kb
-  kblb400 <- parms$kblb400
   
   # Passive sampler rates
   ko <- parms$ko # cm/d mass transfer coefficient to SPME
@@ -183,18 +155,14 @@ rtm.PCB19 = function(t, state, parms){
   Ca <- state[5]
   Cpuf <- state[6]
   
-  Cpw <- Cpw * B
-  Cw <- Cw * B
-  Cf <- Cf * 0.025 / B
-  
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater
-  dCpwdt <- ksed * Vs / Vpw * (Cs - Cpw) -
+  dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
     kpw * Aws / Vpw * (Cpw - Cw) -
-    kb * Cpw - kblb400 * Cpw
+    kb * Cpw
   dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
     kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
     ko * Af * L / Vw * (Cw - Cf / Kf) -
-    kb * Cw - kblb400 * Cw# [ng/L]
+    kb * Cw # [ng/L]
   dCfdt <- ko * Af / Vf * (Cw - Cf / Kf) # Cw = [ng/L], Cf = [ng/L]
   dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
     ro * Apuf / Va * (Ca - Cpuf / Kpuf) # Ca = [ng/L]
@@ -213,8 +181,8 @@ rtm.PCB19 = function(t, state, parms){
   Cs0 <- Ct * M # [ng/L]
 }
 cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 500, ko = 6, kb = 0, kblb400 = 0) # Input
-t.1 <- unique(pcb_combined_treatment$time)
+parms <- list(ro = 510, ko = 10, kb = 0) # Input 500/540 non-shaking/shaking
+t.1 <- unique(pcb_combined_control$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB19, parms = parms)
 head(out.1)
@@ -245,8 +213,8 @@ head(out.1)
   df.1$fpuf <- df.1$mpuf / df.1$mt # [ng]
   
   # Ensure observed data is in a tibble
-  observed_data <- as_tibble(pcb_combined_treatment) %>%
-    select(time, mf_Treatment, mpuf_Treatment)
+  observed_data <- as_tibble(pcb_combined_control) %>%
+    select(time, mf_control, mpuf_control)
   
   # Convert model results to tibble and select relevant columns
   model_results <- as_tibble(df.1) %>%
@@ -262,9 +230,9 @@ head(out.1)
     group_by(time) %>%  # Adjust the grouping variable if needed
     summarise(
       avg_mf_model = mean(mf, na.rm = TRUE),
-      avg_mf_observed = mean(mf_Treatment, na.rm = TRUE),
+      avg_mf_observed = mean(mf_control, na.rm = TRUE),
       avg_mpuf_model = mean(mpuf, na.rm = TRUE),
-      avg_mpuf_observed = mean(mpuf_Treatment, na.rm = TRUE)
+      avg_mpuf_observed = mean(mpuf_control, na.rm = TRUE)
     )
   
   # Define function to calculate R-squared, handling NA values
@@ -291,8 +259,9 @@ head(out.1)
   # Plot
   # Run the model with the new time sequence
   cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
-  t_daily <- seq(0, 80, by = 1)  # Adjust according to your needs
-  out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB19, parms = parms)
+  t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
+  out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB19,
+                   parms = parms)
   head(out_daily)
   
   # Transform Cf and Cpuf to mass/cm and mass/puf
@@ -309,7 +278,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  write.csv(model_results_daily_clean, file = "Output/Data/RTM/NS/NBH/PCB19NBHTreatmentFV.csv")
+  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB19Control.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%
@@ -320,12 +289,12 @@ head(out.1)
   
   # Clean observed data and prepare for plotting
   observed_data_clean <- observed_data %>%
-    pivot_longer(cols = c(mf_Treatment, mpuf_Treatment), 
+    pivot_longer(cols = c(mf_control, mpuf_control), 
                  names_to = "variable", 
                  values_to = "observed_value") %>%
     mutate(variable = recode(variable, 
-                             "mf_Treatment" = "mf", 
-                             "mpuf_Treatment" = "mpuf"),
+                             "mf_control" = "mf", 
+                             "mpuf_control" = "mpuf"),
            type = "Observed")
   
   plot_data_daily <- bind_rows(
@@ -358,12 +327,13 @@ head(out.1)
     scale_color_manual(values = c("Model" = "blue", "Observed" = "red")) +
     theme_bw() +
     theme(legend.title = element_blank())
+  
 }
 
 # Arrange plots side by side
 p.19 <- grid.arrange(p_mf, p_mpuf, ncol = 2)
 
 # Save plot in folder
-ggsave("Output/Plots/RTM/NS/NBH/PCB19NBH_NS_TreatmentFV.png", plot = p.19, width = 6,
+ggsave("Output/Plots/RTM/PCB19Control.png", plot = p.19, width = 6,
        height = 5, dpi = 500)
 
