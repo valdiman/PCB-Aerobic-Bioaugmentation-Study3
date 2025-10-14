@@ -9,6 +9,7 @@ dir.create("Output/Data")
 dir.create("Output/Data/RTM")
 dir.create("Output/Plots")
 dir.create("Output/Plots/RTM")
+dir.create("Output/Plots/TimeSeries")
 
 
 
