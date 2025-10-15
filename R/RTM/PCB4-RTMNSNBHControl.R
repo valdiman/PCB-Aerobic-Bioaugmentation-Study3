@@ -1,8 +1,8 @@
 # Code to model PCB 4 in laboratory experiments
-# using sediment from Altavista, VI. Passive measurements
-# of PCB 4 in the water and the air phases are predicted and
+# using sediment from NBH. Passive measurements
+# of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
-# samplers.
+# samplers. Control experiment, no biochar, no LB400
 
 # Packages and libraries --------------------------------------------------
 # Install packages
@@ -25,56 +25,41 @@ install.packages("gridExtra")
 
 # Read data ---------------------------------------------------------------
 {
-  exp.data <- read.csv("Data/06_Dataset_final_PCBmass.csv")
+  exp.data <- read.csv("Data/uncoated_biochar_V2.csv")
   # Select individual congener from datasets
   pcb.ind <- "PCB_4"
   # Extract relevant columns
-  pcbi <- exp.data[, c("ID", "Group", "time", "Sample_medium", pcb.ind)]
+  pcbi <- exp.data[, c("Sample_medium", "Experiment", "percent_biochar",
+                       "Group", "time", "Replicate", pcb.ind)]
 }
 
 # Organize data -----------------------------------------------------------
 {
-  pcbi <- pcbi[!is.na(pcbi$PCB_4), ]
+  # Using time series experiments
   # Pull congener-specific data from the dataset without averaging
   # Select SPME control samples
   pcbi.spme.control <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Control", Sample_medium == "SPME") %>%
-    rename("mf_Control" = PCB_4)
-  # Select SPME treatment samples
-  pcbi.spme.treatment <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "SPME") %>%
-    rename("mf_Treatment" = PCB_4)
+    filter(Sample_medium == "SPME", Experiment == "biochar_timeseries",
+           Group == "Control", percent_biochar == 0.0) %>%
+    rename("mf_control" = PCB_4)
+  
   # Select PUF control samples
   pcbi.puf.control <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Control", Sample_medium == "PUF") %>%
-    rename("mpuf_Control" = PCB_4)
-  # Select PUF treatment samples
-  pcbi.puf.treatment <- pcbi %>%
-    filter(ID == "NBH_NS", Group == "Treatment", Sample_medium == "PUF") %>%
-    rename("mpuf_Treatment" = PCB_4)
+    filter(Sample_medium == "PUF", Experiment == "biochar_timeseries",
+           Group == "Control", percent_biochar == 0.0) %>%
+    rename("mpuf_control" = PCB_4)
+  
   # Combine the mf and mpuf data for Control
   pcb_combined_control <- cbind(
     pcbi.spme.control %>%
-      select(time, mf_Control),
+      select(time, mf_control),
     pcbi.puf.control %>%
-      select(mpuf_Control)
+      select(mpuf_control)
   )
   # Add a row for time = 0
   pcb_combined_control <- rbind(
-    data.frame(time = 0, mf_Control = 0, mpuf_Control = 0),
+    data.frame(time = 0, mf_control = 0, mpuf_control = 0),
     pcb_combined_control
-  )
-  # Combine the mf and mpuf data for Treatment
-  pcb_combined_treatment <- cbind(
-    pcbi.spme.treatment %>%
-      select(time, mf_Treatment),
-    pcbi.puf.treatment %>%
-      select(mpuf_Treatment)
-  )
-  # Add a row for time = 0 if needed
-  pcb_combined_treatment <- rbind(
-    data.frame(time = 0, mf_Treatment = 0, mpuf_Treatment = 0),
-    pcb_combined_treatment
   )
 }
 
