@@ -1,8 +1,8 @@
 # Code to model PCB 19 in laboratory experiments
-# using sediment from Altavista, VI. Passive measurements
+# using sediment from NBH. Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
-# samplers.
+# samplers. Control experiment, 5% biochar, no LB400
 
 # Packages and libraries --------------------------------------------------
 # Install packages
@@ -140,6 +140,11 @@ rtm.PCB19 = function(t, state, parms){
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
   ksed <- 10^(logksed) * 1.2 # 20% more due to movement of the system
   
+  # Add PCB sorption to biochar
+  Kbc <- 10^(4.986) # [Lw/KgBC] Need values
+  Cbc <- 0.005 # [g/L] 5% of total sediment
+  BC <- Vw / (Vw + Kbc * Cbc *Vw / 1000)
+  
   # Bioremediation rate
   kb <- parms$kb
   
@@ -154,6 +159,10 @@ rtm.PCB19 = function(t, state, parms){
   Cf <- state[4]
   Ca <- state[5]
   Cpuf <- state[6]
+  
+  # Add sorption effect on Cpw and Cw due to biochar
+  Cpw <- Cpw * BC
+  Cw <- Cw * BC
   
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater
   dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
@@ -185,7 +194,7 @@ parms <- list(ro = 510, ko = 10, kb = 0) # Input 500/540 non-shaking/shaking
 t.1 <- unique(pcb_combined_control_5$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB19, parms = parms)
-head(out.1)
+head(out.1) # in ng
 
 {
   # Transform Cf and Cpuf to mass/cm and mass/puf

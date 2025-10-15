@@ -1,8 +1,8 @@
 # Code to model PCB 19 in laboratory experiments
-# using sediment from Altavista, VI. Passive measurements
+# using sediment from NBH. Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
-# samplers.
+# samplers. Control experiment, 5% biochar, and LB400 in biofilm
 
 # Packages and libraries --------------------------------------------------
 # Install packages
@@ -40,13 +40,13 @@ install.packages("gridExtra")
   # Select SPME control samples
   pcbi.spme.treatment <- pcbi %>%
     filter(Sample_medium == "SPME", Experiment == "biochar_timeseries",
-           Group == "Treatment", percent_biochar == 0.0) %>%
+           Group == "Treatment", percent_biochar == 5.0) %>%
     rename("mf_treatment" = PCB_19)
   
   # Select PUF control samples
   pcbi.puf.treatment <- pcbi %>%
     filter(Sample_medium == "PUF", Experiment == "biochar_timeseries",
-           Group == "Treatment", percent_biochar == 0.0) %>%
+           Group == "Treatment", percent_biochar == 5.0) %>%
     rename("mpuf_treatment" = PCB_19)
   
   # Combine the mf and mpuf data for Treatment
@@ -138,7 +138,12 @@ rtm.PCB19 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1.2 # 10% more due to movement of the system
+  ksed <- 10^(logksed) * 1.2 # 20% more due to movement of the system
+  
+  # Add PCB sorption to biochar
+  Kbc <- 10^(4.986) # [Lw/KgBC] Need values. This is for PCB 52
+  Cbc <- 0.005 # [g/L] 5% of total sediment
+  BC <- Vw / (Vw + Kbc * Cbc *Vw / 1000)
   
   # Bioremediation rate
   kb <- parms$kb
@@ -154,6 +159,9 @@ rtm.PCB19 = function(t, state, parms){
   Cf <- state[4]
   Ca <- state[5]
   Cpuf <- state[6]
+  
+  Cpw <- Cpw * BC
+  Cw <- Cw * BC
   
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater
   dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
@@ -182,10 +190,10 @@ rtm.PCB19 = function(t, state, parms){
 }
 cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
 parms <- list(ro = 510, ko = 10, kb = 0) # Input 500/540 non-shaking/shaking
-t.1 <- unique(pcb_combined_control$time)
+t.1 <- unique(pcb_combined_treatment$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB19, parms = parms)
-head(out.1)
+head(out.1) # in ng
 
 {
   # Transform Cf and Cpuf to mass/cm and mass/puf
@@ -213,8 +221,8 @@ head(out.1)
   df.1$fpuf <- df.1$mpuf / df.1$mt # [ng]
   
   # Ensure observed data is in a tibble
-  observed_data <- as_tibble(pcb_combined_control) %>%
-    select(time, mf_control, mpuf_control)
+  observed_data <- as_tibble(pcb_combined_treatment) %>%
+    select(time, mf_treatment, mpuf_treatment)
   
   # Convert model results to tibble and select relevant columns
   model_results <- as_tibble(df.1) %>%
@@ -230,9 +238,9 @@ head(out.1)
     group_by(time) %>%  # Adjust the grouping variable if needed
     summarise(
       avg_mf_model = mean(mf, na.rm = TRUE),
-      avg_mf_observed = mean(mf_control, na.rm = TRUE),
+      avg_mf_observed = mean(mf_treatment, na.rm = TRUE),
       avg_mpuf_model = mean(mpuf, na.rm = TRUE),
-      avg_mpuf_observed = mean(mpuf_control, na.rm = TRUE)
+      avg_mpuf_observed = mean(mpuf_treatment, na.rm = TRUE)
     )
   
   # Define function to calculate R-squared, handling NA values
@@ -278,7 +286,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB19Control.csv")
+  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB19Treatment.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%
@@ -289,12 +297,12 @@ head(out.1)
   
   # Clean observed data and prepare for plotting
   observed_data_clean <- observed_data %>%
-    pivot_longer(cols = c(mf_control, mpuf_control), 
+    pivot_longer(cols = c(mf_treatment, mpuf_treatment), 
                  names_to = "variable", 
                  values_to = "observed_value") %>%
     mutate(variable = recode(variable, 
-                             "mf_control" = "mf", 
-                             "mpuf_control" = "mpuf"),
+                             "mf_treatment" = "mf", 
+                             "mpuf_treatment" = "mpuf"),
            type = "Observed")
   
   plot_data_daily <- bind_rows(
@@ -334,6 +342,6 @@ head(out.1)
 p.19 <- grid.arrange(p_mf, p_mpuf, ncol = 2)
 
 # Save plot in folder
-ggsave("Output/Plots/RTM/PCB19Control.png", plot = p.19, width = 6,
+ggsave("Output/Plots/RTM/PCB19Treatment.png", plot = p.19, width = 6,
        height = 5, dpi = 500)
 
