@@ -1,8 +1,8 @@
 # Code to model PCB 19 in laboratory experiments
-# using sediment from Altavista, VI. Passive measurements
+# using sediment from NBH. Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
-# samplers.
+# samplers. Control experiment, no biochar, no LB400
 
 # Packages and libraries --------------------------------------------------
 # Install packages
@@ -138,7 +138,7 @@ rtm.PCB19 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1.2 # 10% more due to movement of the system
+  ksed <- 10^(logksed) * 1.2 # 20% more due to movement of the system
   
   # Bioremediation rate
   kb <- parms$kb
