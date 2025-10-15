@@ -11,7 +11,8 @@ dir.create("Output/Data/Stat")
 dir.create("Output/Plots")
 dir.create("Output/Plots/RTM")
 dir.create("Output/Plots/TimeSeries")
-
+dir.create("Output/Plots/TimeSeries/SPME/")
+dir.create("Output/Plots/TimeSeries/PUF")
 
 
 

@@ -16,7 +16,7 @@ install.packages("ggplot2")
 {
   obs.data <- read.csv("Data/uncoated_biochar_V2.csv")
   # Select individual congener from datasets
-  pcb.ind <- "PCB_52"
+  pcb.ind <- "LCPCB"
   yvar <- sym(pcb.ind) 
   # Extract relevant columns
   pcbi <- obs.data[, c("Sample_medium", "Experiment", "percent_biochar",
@@ -46,7 +46,7 @@ plot.spme <- ggplot(pcbi.spme, aes(x = time, y = !!yvar, color = Group_biochar))
 print(plot.spme)
 
 # Save plot in folder
-ggsave(paste0("Output/Plots/TimeSeries/SPME_", pcb.ind, ".png"),
+ggsave(paste0("Output/Plots/TimeSeries/SPME/SPME_", pcb.ind, ".png"),
        plot = plot.spme, width = 10, height = 5, dpi = 500)
 
 # Select PUF & time series data
@@ -72,5 +72,5 @@ plot.puf <- ggplot(pcbi.puf, aes(x = time, y = !!yvar, color = Group_biochar)) +
 print(plot.puf)
 
 # Save plot in folder
-ggsave(paste0("Output/Plots/TimeSeries/PUF_", pcb.ind, ".png"),
+ggsave(paste0("Output/Plots/TimeSeries/PUF/PUF_", pcb.ind, ".png"),
        plot = plot.puf, width = 10, height = 5, dpi = 500)
