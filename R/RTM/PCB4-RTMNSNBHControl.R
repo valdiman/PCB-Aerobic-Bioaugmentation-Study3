@@ -1,5 +1,5 @@
 # Code to model PCB 4 in laboratory experiments
-# using sediment from NBH. Passive measurements
+# using sediment from NBH (site INT 222. Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
 # samplers. Control experiment, no biochar, no LB400
@@ -138,7 +138,7 @@ rtm.PCB4 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.34 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed)
+  ksed <- 10^(logksed) * 1 # 20% more due to movement of the system
   
   # Bioremediation rate
   kb <- parms$kb
@@ -186,7 +186,7 @@ parms <- list(ro = 500, ko = 6, kb = 0.1) # Input
 t.1 <- unique(pcb_combined_control$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms)
-head(out.1)
+head(out.1) # in ng
 
 {
   # Transform Cf and Cpuf to mass/cm and mass/puf
@@ -215,7 +215,7 @@ head(out.1)
   
   # Ensure observed data is in a tibble
   observed_data <- as_tibble(pcb_combined_control) %>%
-    select(time, mf_Control, mpuf_Control)
+    select(time, mf_control, mpuf_control)
   
   # Convert model results to tibble and select relevant columns
   model_results <- as_tibble(df.1) %>%
@@ -231,9 +231,9 @@ head(out.1)
     group_by(time) %>%  # Adjust the grouping variable if needed
     summarise(
       avg_mf_model = mean(mf, na.rm = TRUE),
-      avg_mf_observed = mean(mf_Control, na.rm = TRUE),
+      avg_mf_observed = mean(mf_control, na.rm = TRUE),
       avg_mpuf_model = mean(mpuf, na.rm = TRUE),
-      avg_mpuf_observed = mean(mpuf_Control, na.rm = TRUE)
+      avg_mpuf_observed = mean(mpuf_control, na.rm = TRUE)
     )
   
   # Define function to calculate R-squared, handling NA values
@@ -260,7 +260,7 @@ head(out.1)
   # Plot
   # Run the model with the new time sequence
   cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
-  t_daily <- seq(0, 80, by = 1)  # Adjust according to your needs
+  t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
   out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB4,
                    parms = parms)
   head(out_daily)
@@ -279,7 +279,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  write.csv(model_results_daily_clean, file = "Output/Data/RTM/NS/NBH/PCB4NBHControlFV.csv")
+  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB4Control.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%
@@ -290,12 +290,12 @@ head(out.1)
   
   # Clean observed data and prepare for plotting
   observed_data_clean <- observed_data %>%
-    pivot_longer(cols = c(mf_Control, mpuf_Control), 
+    pivot_longer(cols = c(mf_control, mpuf_control), 
                  names_to = "variable", 
                  values_to = "observed_value") %>%
     mutate(variable = recode(variable, 
-                             "mf_Control" = "mf", 
-                             "mpuf_Control" = "mpuf"),
+                             "mf_control" = "mf", 
+                             "mpuf_control" = "mpuf"),
            type = "Observed")
   
   plot_data_daily <- bind_rows(
@@ -335,5 +335,5 @@ head(out.1)
 p.4 <- grid.arrange(p_mf, p_mpuf, ncol = 2)
 
 # Save plot in folder
-ggsave("Output/Plots/RTM/NS/NBH/PCB4ALV_NS_ControlFV.png", plot = p.4, width = 6,
+ggsave("Output/Plots/RTM/PCB4Control.png", plot = p.4, width = 6,
        height = 5, dpi = 500)

@@ -1,5 +1,5 @@
 # Code to model PCB 19 in laboratory experiments
-# using sediment from NBH. Passive measurements
+# using sediment from NBH (site INT 222). Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
 # samplers. Control experiment, 5% biochar, no LB400
@@ -49,7 +49,7 @@ install.packages("gridExtra")
            Group == "Control", percent_biochar == 5.0) %>%
     rename("mpuf_control_5" = PCB_19)
   
-  # Combine the mf and mpuf data for Treatment
+  # Combine the mf and mpuf data for Control 5%
   pcb_combined_control_5 <- cbind(
     pcbi.spme.control.5 %>%
       select(time, mf_control_5),
@@ -141,7 +141,7 @@ rtm.PCB19 = function(t, state, parms){
   ksed <- 10^(logksed) * 1.2 # 20% more due to movement of the system
   
   # Add PCB sorption to biochar
-  Kbc <- 10^(4.986) # [Lw/KgBC] Need values
+  Kbc <- 10^(4.1) # [Lw/KgBC] From Dong et al 2025
   Cbc <- 0.005 # [g/L] 5% of total sediment
   BC <- Vw / (Vw + Kbc * Cbc *Vw / 1000)
   

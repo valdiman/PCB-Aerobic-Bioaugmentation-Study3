@@ -1,5 +1,5 @@
 # Code to model PCB 19 in laboratory experiments
-# using sediment from NBH. Passive measurements
+# using sediment from NBH (site INT 222). Passive measurements
 # of PCB 19 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
 # samplers. Control experiment, no biochar, no LB400
