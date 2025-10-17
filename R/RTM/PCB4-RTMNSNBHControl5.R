@@ -184,7 +184,7 @@ rtm.PCB4 = function(t, state, parms){
 # Initial conditions and run function
 # Estimating Cpw (PCB 4 concentration in sediment porewater)
 {
-  Ct <- 314.263 # ng/g PCB 4 sediment concentration
+  Ct <- 145.15 # ng/g PCB 4 sediment concentration
   n <- 0.42 # [%] porosity
   ds <- 1540 # [g/L] sediment density
   M <- ds * (1 - n) / n # [g/L]

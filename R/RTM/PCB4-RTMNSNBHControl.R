@@ -138,7 +138,7 @@ rtm.PCB4 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.34 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1 # 20% more due to movement of the system
+  ksed <- 10^(logksed) * 1.2 # 20% more due to movement of the system
   
   # Bioremediation rate
   kb <- parms$kb
@@ -175,14 +175,14 @@ rtm.PCB4 = function(t, state, parms){
 # Initial conditions and run function
 # Estimating Cpw (PCB 4 concentration in sediment porewater)
 {
-  Ct <- 314.263 # ng/g PCB 4 sediment concentration
+  Ct <- 145.15 # ng/g PCB 4 sediment concentration
   n <- 0.42 # [%] porosity
   ds <- 1540 # [g/L] sediment density
   M <- ds * (1 - n) / n # [g/L]
   Cs0 <- Ct * M # [ng/L]
 }
 cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 500, ko = 6, kb = 0.1) # Input
+parms <- list(ro = 550, ko = 1, kb = 0) # Input
 t.1 <- unique(pcb_combined_control$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB4, parms = parms)
