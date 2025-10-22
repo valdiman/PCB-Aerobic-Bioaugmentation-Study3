@@ -2,12 +2,16 @@
 # for lab data from bioaugmentation experiments
 
 # Install Packages
-install.packages("dplyr")
-install.packages("tidyr")
+{
+  install.packages("dplyr")
+  install.packages("tidyr")
+}
 
 # Load Libraries
-library(dplyr)
-library(tidyr)
+{
+  library(dplyr)
+  library(tidyr)
+}
 
 # Read data ---------------------------------------------------------------
 obs.data <- read.csv("Data/uncoated_biochar_V2.csv")
