@@ -38,7 +38,7 @@ plot.cdna <- ggplot(cDNA, aes(x = time, y = cDNA, color = Group_biochar)) +
   scale_y_log10(
     breaks = trans_breaks("log10", function(x) 10^x),
     labels = trans_format("log10", math_format(10^.x)),
-    limits = c(10, 10^9)) +
+    limits = c(10^2, 10^8)) +
   labs(x = expression(bold("Time (day)")),
        y = bquote(bold("cDNA (copies/g)"))) +
   theme(axis.text.y = element_text(face = "bold", size = 10),
@@ -74,7 +74,7 @@ plot.tgr <- ggplot(tgr, aes(x = time, y = transcript_gene_ratio, color = Group_b
   scale_y_log10(
     breaks = trans_breaks("log10", function(x) 10^x),
     labels = trans_format("log10", math_format(10^.x)),
-    limits = c(1, 10^8)) +
+    limits = c(1, 10^6)) +
   labs(x = expression(bold("Time (day)")),
        y = bquote(bold("Transcript Gene Ratio (copies/g)"))) +
   theme(axis.text.y = element_text(face = "bold", size = 10),

@@ -11,6 +11,7 @@
 {
   library(dplyr)
   library(tidyr)
+  library(stringr)
 }
 
 # Read data ---------------------------------------------------------------
@@ -19,9 +20,14 @@ obs.data <- read.csv("Data/RTqPCR.csv")
 # cDNA --------------------------------------------------------------------
 cDNA <- obs.data[, c("Experiment", "Percent_biochar",
                      "Group", "time", "Replicate", "cDNA")]
-cDNA$Group_biochar <- paste(cDNA$Group, cDNA$Percent_biochar, sep = "-")
+cDNA$Group_biochar <- paste(cDNA$Group, cDNA$Percent_biochar, sep = "_")
+# Remove time 0 Treatment_5
+cDNA <- cDNA %>%
+  filter(!(time == 0 & Group_biochar == "Treatment_5"))
 
-# ANOVA -------------------------------------------------------------------
+# cDNA ANOVA --------------------------------------------------------------
+time_points <- unique(cDNA$time)
+
 anova_pvalues <- data.frame(
   Time = numeric(),
   p_value = numeric()
@@ -54,13 +60,12 @@ anova_sig
 # Export data
 write.csv(anova_sig, file = "Output/Data/Stat/ANOVA_cDNA.csv")
 
-# Tukey's test ------------------------------------------------------------
+# cDNA Tukey's test -------------------------------------------------------
 # Initialize empty data frame
 tukey_sig_df <- data.frame()
 
-# Loop through each significant ANOVA result
 for (i in 1:nrow(anova_sig)) {
-  t <- anova_sig$Time[i]  # time point
+  t <- anova_sig$Time[i]
   
   # Subset data for this time point
   df_time <- cDNA %>% filter(time == t)
@@ -73,19 +78,15 @@ for (i in 1:nrow(anova_sig)) {
   
   # Convert to data frame
   df <- as.data.frame(tuk$Group_biochar) %>%
-    mutate(
-      Time = t,
-      Comparison = rownames(.)
-    ) %>%
+    mutate(Time = t,
+           Comparison = rownames(.)) %>%
     rename(p.adj = `p adj`) %>%
     select(Time, Comparison, diff, lwr, upr, p.adj)
   
-  # Split the comparison into two groups
+  # Split the comparison into two groups (replace '-' with '_' if needed)
   df <- df %>%
     tidyr::separate(Comparison, into = c("Group1", "Group2"), sep = "-") %>%
-    mutate(
-      Higher_Group = ifelse(diff > 0, Group1, Group2)  # which has higher mean
-    )
+    mutate(Higher_Group = ifelse(diff > 0, Group1, Group2))  # which has higher mean
   
   # Keep only significant comparisons
   df_sig <- df %>% filter(p.adj < 0.05)
@@ -98,7 +99,7 @@ for (i in 1:nrow(anova_sig)) {
 tukey_sig_df <- tukey_sig_df %>%
   arrange(Time, p.adj)
 
-print(tukey_sig_df)
+tukey_sig_df
 
 # Export results
 write.csv(tukey_sig_df, file = "Output/Data/Stat/Tukey_cDNA.csv",
@@ -109,7 +110,7 @@ DNA <- obs.data[, c("Experiment", "Percent_biochar",
                      "Group", "time", "Replicate", "DNA")]
 DNA$Group_biochar <- paste(DNA$Group, DNA$Percent_biochar, sep = "-")
 
-# ANOVA -------------------------------------------------------------------
+# DNA ANOVA ---------------------------------------------------------------
 anova_pvalues <- data.frame(
   Time = numeric(),
   p_value = numeric()
