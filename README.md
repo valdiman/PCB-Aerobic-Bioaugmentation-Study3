@@ -1,7 +1,5 @@
 # PCB-Aerobic-Bioaugmentation-Study3
-This model simulates the concentration of two PCB congeners: PCB 4 and PCB 19 in both the aqueous and gas phases within laboratory-scale bioreactors containing PCB-contaminated sediment. The script incorporates experimental passive sampler measurements and uses a least-squares minimization approach to estimate congener-specific sampling rates for both passive samplers.
-
-Additionally, the model can simulate the decrease in volatile PCB release from sediment to air due to the presence of an aerobic PCB-degrading microorganism, with a known biotransformation rate for PCBs.
+This model simulates the concentration of two PCB congeners: PCB 4 and PCB 19 in both the aqueous and gas phases within laboratory-scale bioreactors containing PCB-contaminated sediment. The script incorporates experimental passive sampler measurements and uses a least-squares minimization approach to estimate congener-specific sampling rates for both passive samplers. Additionally, the model can simulate the decrease in volatile PCB release from sediment to air due to the presence of an aerobic PCB-degrading microorganism, with a known biotransformation rate for PCBs. There are also codes to perform ANOVA and Tukey test to individual PCB congenrs, total PCBs and LCPCBs, as well as for cDNA, DNA and transcript gene ratio for the individual sampling time points.
 
 --------------------------
 SHARING/ACCESS/ATTRIBUTION LICENSE INFORMATION
@@ -30,11 +28,11 @@ Principal Investigator email: tim-mattes@uiowa.edu
 
 This work was supported by the National Institutes of Environmental Health Sciences (NIEHS) grant #P42ES013661.  The funding sponsor did not have any role in study design; in collection, analysis, and/or interpretation of data; in creation of the dataset; and/or in the decision to submit this data for publication or deposit it in a repository.
 
-This R project is part of the paper: Ramotowski D, Martinez A, Marek RF, Hornbuckle KC and Mattes TE (2025) Paraburkholderia xenovorans strain LB400 Significantly Decreased Volatilization of Polychlorinated Biphenyls (PCBs) from Freshwater and Saline Sediments. ES&T Water
+This R project is part of the paper: XXX
 
 Subject: Polychlorinated Biphenyls; Contaminant fate and transport; Paraburkholderia xenovorans LB400; Kinetic phase passive sampling; Bioremediation; Biodegradation; Biosurfactants; Bioavailability; GC-MS/MS
 
-GeoLocation: The sediment used in this study was taken from a PCB-contaminated emergency overflow lagoon located in Altavista, VA (37°06'52"N, 79°16'21"W), and New Bedford Harbor, MA. Laboratory and analytical work was done at the University of Iowa in Iowa City, IA, USA.
+GeoLocation: The sediment used in this study was taken from New Bedford Harbor, MA. Laboratory and analytical work was done at the University of Iowa in Iowa City, IA, USA.
 
 --------
 PREREQUISITES & DEPENDENCIES
@@ -67,5 +65,6 @@ The structure of this project includes an R subfolder where all the R scripts ar
 Data
 --------
 
-SPME and PUF data for individual PCB4 and PCB19 can be found at https://doi.org/10.25820/data.007563. The file 06_Dataset_final_PCBmass.csv needs to be downloaded and saved in the Data folder of the project.
+SPME and PUF data for individual PCB4 and PCB19 can be found at https://doi.org/XXX. The file 06_Dataset_final_PCBmass.csv needs to be downloaded and saved in the Data folder of the project.
+
 
