@@ -138,7 +138,7 @@ rtm.PCB19 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 2.2 # 20% more due to movement of the system
+  ksed <- 10^(logksed) * 2.3 # 20% more due to movement of the system
   
   # Add PCB sorption to biochar
   Kbc <- 10^(4.1) # [Lw/KgBC] From Dong et al 2025
@@ -160,9 +160,8 @@ rtm.PCB19 = function(t, state, parms){
   Ca <- state[5]
   Cpuf <- state[6]
   
-  # Add sorption effect on Cpw and Cw due to biochar
+  # Add sorption effect on Cpw due to biochar
   Cpw <- Cpw * BC
-  Cw <- Cw * BC
   
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater
   dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
@@ -170,8 +169,7 @@ rtm.PCB19 = function(t, state, parms){
     kb * Cpw
   dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
     kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
-    ko * Af * L / Vw * (Cw - Cf / Kf) -
-    kb * Cw # [ng/L]
+    ko * Af * L / Vw * (Cw - Cf / Kf) # [ng/L]
   dCfdt <- ko * Af / Vf * (Cw - Cf / Kf) # Cw = [ng/L], Cf = [ng/L]
   dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
     ro * Apuf / Va * (Ca - Cpuf / Kpuf) # Ca = [ng/L]
@@ -183,7 +181,7 @@ rtm.PCB19 = function(t, state, parms){
 
 # Initial conditions and run function
 {
-  Ct <- 131.241 # ng/g PCB 19 sediment concentration
+  Ct <- 131.241 # ng/g PCB 19 sediment concentration av. of site INT 222 (stdv = 40 ng/g)
   n <- 0.42 # [%] porosity
   ds <- 1540 # [g/L] sediment density
   M <- ds * (1 - n) / n # [g/L]

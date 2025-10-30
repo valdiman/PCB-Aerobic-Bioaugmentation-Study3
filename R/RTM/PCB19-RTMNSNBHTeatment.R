@@ -172,8 +172,8 @@ rtm.PCB19 = function(t, state, parms){
   Ca <- state[5]
   Cpuf <- state[6]
   
-  #Cpw <- Cpw * BCB
-  #Cw <- Cw * BCB
+  # Add sorption effect on Cpw due to biochar
+  Cpw <- Cpw * BCB
   
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater
   dCpwdt <- ksed * Vs / Vpw * (Cs - Cpw) -
@@ -182,7 +182,7 @@ rtm.PCB19 = function(t, state, parms){
   dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
     kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
     ko * Af * L / Vw * (Cw - Cf / Kf) -
-    kb * Cw - kblb400 * Cw # [ng/L]
+    kb * Cw # [ng/L]
   dCfdt <- ko * Af / Vf * (Cw - Cf / Kf) # Cw = [ng/L], Cf = [ng/L]
   dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
     ro * Apuf / Va * (Ca - Cpuf / Kpuf) # Ca = [ng/L]
