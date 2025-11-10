@@ -1,6 +1,6 @@
 # Code to model PCB 31 in laboratory experiments
 # using sediment from NBH (site INT 222). Passive measurements
-# of PCB 19 in the water and the air phases are predicted and
+# of PCB 31 in the water and the air phases are predicted and
 # linked to the water and air concentrations from the passive
 # samplers. Control experiment, no biochar, no LB400
 
@@ -102,14 +102,14 @@ rtm.PCB31 = function(t, state, parms){
   Apuf <- 7.07 # cm2
   Vpuf <- 29 # cm3 volume of PUF
   d <- 0.0213 * 100^3 # g/m3 density of PUF
-  Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774) # PCB 19-PUF equilibrium partition coefficient [m3/g]
+  Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774) # PCB 31-PUF equilibrium partition coefficient [m3/g]
   Kpuf <- Kpuf * d # [La/Lpuf]
   
   # SPME fiber constants
   Af <- 0.138 # cm2/cm SPME area
   Vf <- 0.000000069 * 1000 # cm3/cm SPME volume/area
   L <- 1 # cm SPME length normalization to 1 cm
-  Kf <- 10^(1.06 * log10(Kow.t) - 1.16) # PCB 19-SPME equilibrium partition coefficient
+  Kf <- 10^(1.06 * log10(Kow.t) - 1.16) # PCB 31-SPME equilibrium partition coefficient
   
   # Air & water physical conditions
   D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
