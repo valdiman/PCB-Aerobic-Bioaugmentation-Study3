@@ -93,7 +93,7 @@ rtm.PCB31 = function(t, state, parms){
   Kaw <- 0.011205859 # PCB 31 dimensionless Henry's law constant @ 25 C
   dUaw <- 53.59022 # internal energy for the transfer of air-water for PCB 31 (J/mol)
   Kaw.t <- Kaw * exp(-dUaw / R * (1 / Tw.1 - 1 / Tst.1)) * Tw.1 / Tst.1
-  Kow <- 10^(5.67) # PCB 31 octanol-water equilibrium partition coefficient (low value!!)
+  Kow <- 10^(5.67) # PCB 31 octanol-water equilibrium partition coefficient
   dUow <-  -24.78894 # internal energy for the transfer of octanol-water for PCB 31 (J/mol)
   Kow.t <- Kow * exp(-dUow / R * (1 / Tw.1 -  1/ Tst.1))
   Koa <- 10^(8.027570582) # PCB 31 octanol-air equilibrium partition coefficient

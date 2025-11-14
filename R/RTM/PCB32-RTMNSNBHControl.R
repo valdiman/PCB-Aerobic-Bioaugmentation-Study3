@@ -138,7 +138,7 @@ rtm.PCB32 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 0.8
+  ksed <- 10^(logksed) * 1.1
   
   # Bioremediation rate
   kb <- parms$kb
@@ -173,14 +173,14 @@ rtm.PCB32 = function(t, state, parms){
 
 # Initial conditions and run function
 {
-  Ct <- 520 + 180 # ng/g PCB 32 sediment concentration av. of site INT 222 (stdv = 180 ng/g)
+  Ct <- 520 * 1.4 # ng/g PCB 32 sediment concentration av. of site INT 222 (520, stdv = 180 ng/g)
   n <- 0.42 # [%] porosity
   ds <- 1540 # [g/L] sediment density
   M <- ds * (1 - n) / n # [g/L]
   Cs0 <- Ct * M # [ng/L]
 }
 cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 600, ko = 3, kb = 0) # Input 500/540 non-shaking/shaking
+parms <- list(ro = 420, ko = 3, kb = 0) # Input 500/540 non-shaking/shaking
 t.1 <- unique(pcb_combined_control$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)
