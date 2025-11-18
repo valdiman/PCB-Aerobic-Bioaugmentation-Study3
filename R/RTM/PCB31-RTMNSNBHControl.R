@@ -101,9 +101,9 @@ rtm.PCB31 = function(t, state, parms){
   # PUF constants 
   Apuf <- 7.07 # cm2
   Vpuf <- 29 # cm3 volume of PUF
-  d <- 0.0213 * 100^3 # g/m3 density of PUF
-  Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774) # PCB 31-PUF equilibrium partition coefficient [m3/g]
-  Kpuf <- Kpuf * d # [La/Lpuf]
+  d <- 0.0213 * 1e6 # gpuf/m3puf density of PUF
+  Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774) # PCB 31-PUF equilibrium partition coefficient [m3a/gpuf]
+  Kpuf <- Kpuf * d # [m3a/m3puf] or [La/Lpuf]
   
   # SPME fiber constants
   Af <- 0.138 # cm2/cm SPME area
@@ -277,7 +277,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB31Control.csv")
+  # write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB31Control.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%

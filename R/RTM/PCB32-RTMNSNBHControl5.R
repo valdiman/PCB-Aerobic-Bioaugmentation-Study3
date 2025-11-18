@@ -138,7 +138,7 @@ rtm.PCB32 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1.1
+  ksed <- 10^(logksed) * 1.1 # 10% more
   
   # Add PCB sorption to biochar
   Kbc <- 10^(4.1) # [Lw/KgBC] From Dong et al 2025
@@ -285,7 +285,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB32Control5.csv")
+  write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB32Control5.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%

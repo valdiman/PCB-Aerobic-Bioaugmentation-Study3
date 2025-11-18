@@ -189,7 +189,7 @@ rtm.PCB32 = function(t, state, parms){
   Cs0 <- Ct * M # [ng/L]
 }
 cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 600, ko = 3, kb = 0, kblb400 = 0) # Input 500/540 non-shaking/shaking
+parms <- list(ro = 420, ko = 3, kb = 0, kblb400 = 0.0) # Input 500/540 non-shaking/shaking
 t.1 <- unique(pcb_combined_treatment$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)

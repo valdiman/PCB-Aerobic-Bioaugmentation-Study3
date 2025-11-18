@@ -82,7 +82,6 @@ rtm.PCB32 = function(t, state, parms){
   Va <- 125 # cm3 headspace volumne
   Aaw <- 20 # cm2 
   Aws <- 30 # cm2
-  Apw <- 1166000 # [cm2]
   ms <- 10 # [g]
   n <- 0.42 # [%] porosity
   ds <- 1540 # [g/L] sediment density
@@ -138,7 +137,7 @@ rtm.PCB32 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1.1
+  ksed <- 10^(logksed) * 1.1 # 10% more
   
   # Bioremediation rate
   kb <- parms$kb
