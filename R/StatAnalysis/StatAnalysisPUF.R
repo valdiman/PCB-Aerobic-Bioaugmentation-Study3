@@ -17,7 +17,7 @@
 obs.data <- read.csv("Data/uncoated_biochar_V2.csv")
 
 # Format data -------------------------------------------------------------
-# Select SPME & time series data
+# Select PUF & time series data
 pcbi.puf <- obs.data %>%
   filter(Sample_medium =="PUF", Experiment =="biochar_timeseries")
 
