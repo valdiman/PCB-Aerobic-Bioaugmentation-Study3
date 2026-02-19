@@ -146,7 +146,7 @@ rtm.PCB32 = function(t, state, parms){
   ko <- parms$ko # cm/d mass transfer coefficient to SPME
   ro <- parms$ro # cm/d sampling rate for PUF
   
-  # derivatives dx/dt are computed below
+  # derivatives dx/dt are computed below [ng/L]
   Cs <- state[1]
   Cpw <- state[2]
   Cw <- state[3]
@@ -154,17 +154,23 @@ rtm.PCB32 = function(t, state, parms){
   Ca <- state[5]
   Cpuf <- state[6]
   
-  dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater [ng/L]
+  # Desorption from sediment to porewater
+  dCsdt <- - ksed * (Cs - Cpw)
+  # Porewater: gain from sediment, loss/exchange to water
   dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
     kpw * Aws / Vpw * (Cpw - Cw) -
-    kb * Cpw # [ng/L]
+    kb * Cpw
+  # Water column: gain from porewater, loss to air, uptake into film sampler
   dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
     kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
-    ko * Af * L / Vw * (Cw - Cf / Kf) # [ng/L]
-  dCfdt <- ko * Af / Vf * (Cw - Cf / Kf) # Cw = [ng/L], Cf = [ng/L]
+    ko * Af * L / Vw * (Cw - Cf / Kf)
+  # SPME kinetic uptake
+  dCfdt <- ko * Af / Vf * (Cw - Cf / Kf)
+  # Air: gain from water (volatilization) minus PUF uptake
   dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
-    ro * Apuf / Va * (Ca - Cpuf / Kpuf) # Ca = [ng/L]
-  dCpufdt <- ro * Apuf / Vpuf * (Ca - Cpuf / Kpuf) # Ca = [ng/L], Cpuf = [ng/L]
+    ro * Apuf / Va * (Ca - Cpuf / Kpuf)
+  # PUF kinetics
+  dCpufdt <- ro * Apuf / Vpuf * (Ca - Cpuf / Kpuf)
   
   # The computed derivatives are returned as a list
   return(list(c(dCsdt, dCpwdt, dCwdt, dCfdt, dCadt, dCpufdt)))
