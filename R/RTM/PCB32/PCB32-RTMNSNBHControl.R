@@ -64,158 +64,150 @@ install.packages("gridExtra")
 }
 
 # Reactive transport function ---------------------------------------------
-rtm.PCB32 = function(t, state, parms){
-  
-  # Experimental conditions
-  MH2O <- 18.0152 # g/mol water molecular weight
-  MCO2 <- 44.0094 # g/mol CO2 molecular weight
-  MW.pcb <- 257.532 # g/mol PCB 32 molecular weight
-  R <- 8.3144 # J/(mol K) molar gas constant
-  Tst <- 25 #C air temperature
-  Tst.1 <- 273.15 + Tst # air and standard temperature in K, 25 C
-  Tw <- 20 # C water temperature
-  Tw.1 <- 273.15 + Tw
-  
-  # Bioreactor parameters
-  Vw <- 100 # cm3 water volume
-  Vpw <- 4 # cm3 porewater volume
-  Va <- 125 # cm3 headspace volumne
-  Aaw <- 20 # cm2 
-  Aws <- 30 # cm2
-  ms <- 10 # [g]
-  n <- 0.42 # [%] porosity
-  ds <- 1540 # [g/L] sediment density
-  M <- ds * (1 - n) / n # [g/L]
-  Vs <- ms / M * 1000 # [cm3]
-  
-  # Congener-specific constants
-  Kaw <- 0.016011984 # PCB 32 dimensionless Henry's law constant @ 25 C
-  dUaw <- 52.59022 # internal energy for the transfer of air-water for PCB 32 (J/mol)
-  Kaw.t <- Kaw * exp(-dUaw / R * (1 / Tw.1 - 1 / Tst.1)) * Tw.1 / Tst.1
-  Kow <- 10^(5.44) # PCB 32 octanol-water equilibrium partition coefficient
-  dUow <-  -22.88894 # internal energy for the transfer of octanol-water for PCB 32 (J/mol)
-  Kow.t <- Kow * exp(-dUow / R * (1 / Tw.1 -  1/ Tst.1))
-  Koa <- 10^(7.709482239) # PCB 32 octanol-air equilibrium partition coefficient
-  
-  # PUF constants 
-  Apuf <- 7.07 # cm2
-  Vpuf <- 29 # cm3 volume of PUF
-  d <- 0.0213 * 100^3 # g/m3 density of PUF
-  Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774) # PCB 32-PUF equilibrium partition coefficient [m3/g]
-  Kpuf <- Kpuf * d # [La/Lpuf]
-  
-  # SPME fiber constants
-  Af <- 0.138 # cm2/cm SPME area
-  Vf <- 0.000000069 * 1000 # cm3/cm SPME volume/area
-  L <- 1 # cm SPME length normalization to 1 cm
-  Kf <- 10^(1.06 * log10(Kow.t) - 1.16) # PCB 32-SPME equilibrium partition coefficient
-  
-  # Air & water physical conditions
-  D.water.air <- 0.2743615 # cm2/s water's diffusion coefficient in the gas phase @ Tair = 25 C, patm = 1013.25 mbars 
-  D.co2.w <- 1.67606E-05 # cm2/s CO2's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars 
-  D.pcb.air <- D.water.air * (MW.pcb/MH2O)^(-0.5) # cm2/s PCB 32's diffusion coefficient in the gas phase (eq. 18-45)
-  D.pcb.water <- D.co2.w * (MW.pcb/MCO2)^(-0.5) # cm2/s PCB 32's diffusion coefficient in water @ Tair = 25 C, patm = 1013.25 mbars
-  v.H2O <- 0.010072884	# cm2/s kinematic viscosity of water @ Tair = 25
-  V.water.air <- 0.003 # m/s water's velocity of air-side mass transfer without ventilation (eq. 20-15)
-  V.co2.w <- 4.1*10^-2 # m/s mass transfer coefficient of CO2 in water side without ventilation
-  SC.pcb.w <- v.H2O / D.pcb.water # Schmidt number PCB 32
-  
-  # Porewater-water MTC (kpw)
-  bl <- 0.21 # cm boundary layer thickness
-  kpw <- D.pcb.water * 60 * 60 * 24 / bl # [cm/d]
-  kpw.m.d <- kpw / 100 # [m/d]
-  
-  # Air-water mass MTC (kaw.o)
-  # i) Kaw.a, air-side mass transfer coefficient
-  Kaw.a <- V.water.air * (D.pcb.air/D.water.air)^(0.67) # [m/s]
-  # ii) Kaw.w, water-side mass transfer coefficient for PCB 32. 600 is the Schmidt number of CO2 at 298 K
-  Kaw.w <- V.co2.w * (SC.pcb.w/600)^(-0.5) # [m/s]
-  # iii) kaw, overall air-water mass transfer coefficient for PCB 32
-  kaw.o <- (1 / (Kaw.a * Kaw.t) + (1 / Kaw.w))^-1 # [m/s]
-  # iv) kaw, overall air-water mass transfer coefficient for PCB 32, units change
-  kaw.o <- kaw.o * 100 * 60 * 60 * 24 # [cm/d]
-  
-  # Sediment-porewater radial diffusion model (ksed)
-  logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) # 10% more
-  
-  # Bioremediation rate
-  kb <- parms$kb
-  
-  # Passive sampler rates
-  ko <- parms$ko # cm/d mass transfer coefficient to SPME
-  ro <- parms$ro # cm/d sampling rate for PUF
-  
-  # derivatives dx/dt are computed below [ng/L]
-  Cs <- state[1]
-  Cpw <- state[2]
-  Cw <- state[3]
-  Cf <- state[4]
-  Ca <- state[5]
-  Cpuf <- state[6]
-  
-  # Desorption from sediment to porewater
-  dCsdt <- - ksed * Vs  / ms * (Cpw_eq - Cpw)
-  # Porewater: gain from sediment, loss/exchange to water
-  dCpwdt <- ksed *  Vs / Vpw * (Cpw_eq - Cpw) -
-    kpw * Aws / Vpw * (Cpw - Cw) -
-    kb * Cpw
-  # Water column: gain from porewater, loss to air, uptake into film sampler
-  dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
-    kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
-    ko * Af * L / Vw * (Cw - Cf / Kf)
-  # SPME kinetic uptake
-  dCfdt <- ko * Af / Vf * (Cw - Cf / Kf)
-  # Air: gain from water (volatilization) minus PUF uptake
-  dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
-    ro * Apuf / Va * (Ca - Cpuf / Kpuf)
-  # PUF kinetics
-  dCpufdt <- ro * Apuf / Vpuf * (Ca - Cpuf / Kpuf)
-  
-  # The computed derivatives are returned as a list
-  return(list(c(dCsdt, dCpwdt, dCwdt, dCfdt, dCadt, dCpufdt)))
+# ---- ODE function (minimal, no defensive checks) ----
+rtm.PCB32 <- function(t, state, parms) {
+  with(as.list(c(state, parms)), {
+    # --- geometry / fixed geometry values (cm3, cm2)
+    Vw  <- 100    # cm3 water volume
+    Vpw <- 4      # cm3 porewater volume
+    Va  <- 125    # cm3 headspace
+    Aaw <- 20     # cm2 air-water area
+    Aws <- 30     # cm2 sediment-water area
+    
+    # --- sediment mass (g) and compute Vs (cm3) from porosity + density
+    ms_local <- parms$ms
+    n  <- 0.42
+    ds <- 1540        # g/L
+    M  <- ds * (1 - n) / n           # g solids per L porewater
+    Vs <- ms_local / M * 1000        # cm3 porewater associated with ms_local
+    
+    # --- congener-specific constants (as you provided)
+    MH2O <- 18.0152; MCO2 <- 44.0094; MW.pcb <- 257.532; R <- 8.3144
+    Tst.1 <- 273.15 + 25; Tw.1 <- 273.15 + 20
+    
+    Kaw <- 0.016011984; dUaw <- 52.59022
+    Kaw.t <- Kaw * exp(-dUaw / R * (1 / Tw.1 - 1 / Tst.1)) * Tw.1 / Tst.1
+    Kow <- 10^(5.44); dUow <- -22.88894
+    Kow.t <- Kow * exp(-dUow / R * (1 / Tw.1 - 1 / Tst.1))
+    Koa <- 10^(7.709482239)
+    
+    # PUF & SPME
+    Apuf <- 7.07; Vpuf <- 29
+    d <- 0.0213 * 100^3
+    Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774)
+    Kpuf <- Kpuf * d
+    Af <- 0.138
+    Vf <- 0.000000069 * 1000
+    L  <- 1
+    Kf <- 10^(1.06 * log10(Kow.t) - 1.16)
+    
+    # Diffusion / transfer coefficients
+    D.water.air <- 0.2743615
+    D.co2.w <- 1.67606E-05
+    D.pcb.air <- D.water.air * (MW.pcb/MH2O)^(-0.5)
+    D.pcb.water <- D.co2.w * (MW.pcb/MCO2)^(-0.5)
+    v.H2O <- 0.010072884
+    V.water.air <- 0.003
+    V.co2.w <- 4.1*10^-2
+    SC.pcb.w <- v.H2O / D.pcb.water
+    
+    bl <- 0.21
+    kpw <- D.pcb.water * 60 * 60 * 24 / bl   # cm/day
+    
+    Kaw.a <- V.water.air * (D.pcb.air/D.water.air)^(0.67)
+    Kaw.w <- V.co2.w * (SC.pcb.w/600)^(-0.5)
+    kaw.o <- (1 / (Kaw.a * Kaw.t) + (1 / Kaw.w))^-1
+    kaw.o <- kaw.o * 100 * 60 * 60 * 24   # cm/day
+    
+    logksed <- -0.832 * log10(Kow.t) + 1.4
+    ksed <- 10^(logksed)
+    
+    # sampler rates / kb from parms
+    ko_local <- parms$ko
+    ro_local <- parms$ro
+    kb_local <- parms$kb
+    Kd_local <- parms$Kd
+    
+    # --- state variables (order must match cinit)
+    Cs   <- state[1]   # ng/g (solid)
+    Cpw  <- state[2]   # ng/L (porewater)
+    Cw   <- state[3]
+    Cf   <- state[4]
+    Ca   <- state[5]
+    Cpuf <- state[6]
+    
+    # --- convert cm3 -> L for flux denominators
+    Vs_L  <- Vs  / 1000
+    Vpw_L <- Vpw / 1000
+    Vw_L  <- Vw  / 1000
+    Va_L  <- Va  / 1000
+    Vpuf_L<- Vpuf/ 1000
+    Vf_L  <- Vf  / 1000
+    
+    # --- current Cs -> porewater-equivalent (ng/L)
+    Cs_pw_eq <- Cs * 1000 / Kd_local
+    
+    # --- ODEs (mass-consistent)
+    dCsdt  <- - ksed * Vs_L / ms_local * (Cs_pw_eq - Cpw)
+    dCpwdt <-   ksed * Vs_L / Vpw_L * (Cs_pw_eq - Cpw) -
+      kpw * Aws / Vpw_L * (Cpw - Cw) -
+      kb_local * Cpw
+    
+    dCwdt <- kpw * Aws / Vw_L * (Cpw - Cw) -
+      kaw.o * Aaw / Vw_L * (Cw - Ca / Kaw.t) -
+      ko_local * Af * L / Vw_L * (Cw - Cf / Kf)
+    
+    dCfdt <- ko_local * Af / Vf_L * (Cw - Cf / Kf)
+    
+    dCadt <- kaw.o * Aaw / Va_L * (Cw - Ca / Kaw.t) -
+      ro_local * Apuf / Va_L * (Ca - Cpuf / Kpuf)
+    
+    dCpufdt <- ro_local * Apuf / Vpuf_L * (Ca - Cpuf / Kpuf)
+    
+    return(list(c(dCsdt, dCpwdt, dCwdt, dCfdt, dCadt, dCpufdt)))
+  })
 }
 
-# Initial conditions and run function
-{
-  Ct <- 520 # ng/g PCB 32 sediment concentration av. of site INT 222 (520, stdv = 180 ng/g)
-  # https://web.app.ufz.de/compbc/lserd/public/start/#searchresult
-  E <- 1.74
-  S <- 1.35
-  A <- 0
-  B <- 0.17
-  V <- 1.6914
-  L <- 7.667
-  logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * V + 0.14 # [Lw/Kgoc]
-  foc <- 0.03 # [%] [kgoc/kgsed]
-  Kd <- foc * 10^(logKoc) # [Lw/kgsed]
-  Cpw_eq <- Ct / Kd * 1000 # [ng/Lw]
-}
-cinit <- c(Cs = Ct, Cpw = Cpw_eq, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 420, ko = 3, kb = 0) # Input 500/540 non-shaking/shaking
+# ---- Outside: compute Kd, initial conditions, parms, run ----
+Ct <- 520   # ng/g sediment measured
+E <- 1.74; S <- 1.35; A <- 0; B <- 0.17; V <- 1.6914
+
+logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * V + 0.14
+Koc <- 10^(logKoc)
+foc <- 0.03
+Kd  <- Koc * foc   # L/kg sediment
+
+Cpw0 <- Ct * 1000 / Kd   # ng/L
+
+cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
+
+parms <- list(ro = 420, ko = 3, kb = 0, Kd = Kd, ms = 10)
+
 t.1 <- unique(pcb_combined_control$time)
-# Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)
-head(out.1)
 
-{
-  # Transform Cf and Cpuf to mass/cm and mass/puf
-  df.1 <- as.data.frame(out.1)
-  colnames(df.1) <- c("time", "Cs", "Cpw", "Cw", "Cf", "Ca", "Cpuf")
-  # Calculate masses and fractions
-  ms <- 10 # [g]
-  Vpw <- 4 # [cm3]
-  Vw <- 100 # [cm3]
-  Va <- 125 # cm3
-  Vf <- 0.000000069 * 1000 # [cm3/cm SPME]
-  Vpuf <- 29 # [cm3 volume of PUF]
-  df.1$ms <- df.1$Cs * ms
-  df.1$mpw <- df.1$Cpw * Vpw / 1000
-  df.1$mw <- df.1$Cw * Vw / 1000
-  df.1$mf <- df.1$Cf * Vf / 1000 # [ng]
-  df.1$ma <- df.1$Ca * Va / 1000 # [ng]
-  df.1$mpuf <- df.1$Cpuf * Vpuf / 1000 # [ng]
-  df.1$mt <- df.1$ms + df.1$mpw + df.1$mw + df.1$mf + df.1$ma + df.1$mpuf # [ng]
+# ---- post-process masses (ng) ----
+df.1 <- as.data.frame(out.1)
+colnames(df.1) <- c("time","Cs","Cpw","Cw","Cf","Ca","Cpuf")
+
+msed_g  <- parms$ms
+Vpw_cm3 <- 4; Vw_cm3 <- 100; Va_cm3 <- 125; Vpuf_cm3 <- 29; Vf_cm3 <- 0.000000069 * 1000
+
+Vpw_L  <- Vpw_cm3  / 1000
+Vw_L   <- Vw_cm3   / 1000
+Va_L   <- Va_cm3   / 1000
+Vpuf_L <- Vpuf_cm3 / 1000
+Vf_L   <- Vf_cm3   / 1000
+
+df.1$ms   <- df.1$Cs   * msed_g
+df.1$mpw  <- df.1$Cpw  * Vpw_L
+df.1$mw   <- df.1$Cw   * Vw_L
+df.1$mf   <- df.1$Cf   * Vf_L    # if Cf is concentration-equivalent; otherwise Cf already mass
+df.1$ma   <- df.1$Ca   * Va_L
+df.1$mpuf <- df.1$Cpuf * Vpuf_L
+
+df.1$mt <- df.1$ms + df.1$mpw + df.1$mw + df.1$mf + df.1$ma + df.1$mpuf
+
   df.1$fs <- df.1$ms / df.1$mt # [ng]
   df.1$fpw <- df.1$mpw / df.1$mt # [ng]
   df.1$fw <- df.1$mw / df.1$mt # [ng]
@@ -269,7 +261,7 @@ head(out.1)
   
   # Plot
   # Run the model with the new time sequence
-  cinit <- c(Cs = Ct, Cpw = Cpw_eq, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
+  cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
   t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
   out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB32,
                    parms = parms)
@@ -280,8 +272,8 @@ head(out.1)
   colnames(out.daily) <- c("time", "Cs", "Cpw", "Cw", "Cf", "Ca", "Cpuf")
   
   # Calculate Mf and Mpuf based on volumes
-  out.daily$mf <- out.daily$Cf * Vf / 1000 # [ng]
-  out.daily$mpuf <- out.daily$Cpuf * Vpuf / 1000  # [ng]
+  out.daily$mf <- out.daily$Cf * Vf_L # [ng]
+  out.daily$mpuf <- out.daily$Cpuf * Vpuf_L  # [ng]
   
   # Convert model results to tibble and ensure numeric values
   model_results_daily_clean <- as_tibble(out.daily) %>%
@@ -289,7 +281,7 @@ head(out.1)
     select(time, mf, mpuf)
   
   # Export data
-  write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB32Control.csv")
+  #write.csv(model_results_daily_clean, file = "Output/Data/RTM/PCB32Control.csv")
   
   # Prepare model data for plotting
   model_data_long <- model_results_daily_clean %>%
@@ -339,7 +331,7 @@ head(out.1)
     theme_bw() +
     theme(legend.title = element_blank())
   
-}
+#}
 
 # Arrange plots side by side
 p.32 <- grid.arrange(p_mf, p_mpuf, ncol = 2)
