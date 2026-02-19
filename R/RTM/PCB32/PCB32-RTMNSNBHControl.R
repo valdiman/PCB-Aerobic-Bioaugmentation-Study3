@@ -137,7 +137,7 @@ rtm.PCB32 = function(t, state, parms){
   
   # Sediment-porewater radial diffusion model (ksed)
   logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1.1 # 10% more
+  ksed <- 10^(logksed) # 10% more
   
   # Bioremediation rate
   kb <- parms$kb
@@ -155,9 +155,9 @@ rtm.PCB32 = function(t, state, parms){
   Cpuf <- state[6]
   
   # Desorption from sediment to porewater
-  dCsdt <- - ksed * (Cs - Cpw)
+  dCsdt <- - ksed * Vs  / ms * (Cpw_eq - Cpw)
   # Porewater: gain from sediment, loss/exchange to water
-  dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
+  dCpwdt <- ksed *  Vs / Vpw * (Cpw_eq - Cpw) -
     kpw * Aws / Vpw * (Cpw - Cw) -
     kb * Cpw
   # Water column: gain from porewater, loss to air, uptake into film sampler
@@ -178,13 +178,20 @@ rtm.PCB32 = function(t, state, parms){
 
 # Initial conditions and run function
 {
-  Ct <- 520 * 1.4 # ng/g PCB 32 sediment concentration av. of site INT 222 (520, stdv = 180 ng/g)
-  n <- 0.42 # [%] porosity
-  ds <- 1540 # [g/L] sediment density
-  M <- ds * (1 - n) / n # [g/L]
-  Cs0 <- Ct * M # [ng/L]
+  Ct <- 520 # ng/g PCB 32 sediment concentration av. of site INT 222 (520, stdv = 180 ng/g)
+  # https://web.app.ufz.de/compbc/lserd/public/start/#searchresult
+  E <- 1.74
+  S <- 1.35
+  A <- 0
+  B <- 0.17
+  V <- 1.6914
+  L <- 7.667
+  logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * V + 0.14 # [Lw/Kgoc]
+  foc <- 0.03 # [%] [kgoc/kgsed]
+  Kd <- foc * 10^(logKoc) # [Lw/kgsed]
+  Cpw_eq <- Ct / Kd * 1000 # [ng/Lw]
 }
-cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
+cinit <- c(Cs = Ct, Cpw = Cpw_eq, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
 parms <- list(ro = 420, ko = 3, kb = 0) # Input 500/540 non-shaking/shaking
 t.1 <- unique(pcb_combined_control$time)
 # Run the ODE function without specifying parms
@@ -202,7 +209,7 @@ head(out.1)
   Va <- 125 # cm3
   Vf <- 0.000000069 * 1000 # [cm3/cm SPME]
   Vpuf <- 29 # [cm3 volume of PUF]
-  df.1$ms <- df.1$Cs * ms / M
+  df.1$ms <- df.1$Cs * ms
   df.1$mpw <- df.1$Cpw * Vpw / 1000
   df.1$mw <- df.1$Cw * Vw / 1000
   df.1$mf <- df.1$Cf * Vf / 1000 # [ng]
@@ -262,7 +269,7 @@ head(out.1)
   
   # Plot
   # Run the model with the new time sequence
-  cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
+  cinit <- c(Cs = Ct, Cpw = Cpw_eq, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
   t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
   out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB32,
                    parms = parms)
