@@ -75,14 +75,15 @@ rtm.PCB32 <- function(t, state, parms) {
     Aws <- 30     # cm2 sediment-water area
     
     # --- sediment mass (g) and compute Vs (cm3) from porosity + density
-    ms_local <- parms$ms
+    ms <- parms$ms
     n  <- 0.42
     ds <- 1540        # g/L
     M  <- ds * (1 - n) / n           # g solids per L porewater
-    Vs <- ms_local / M * 1000        # cm3 porewater associated with ms_local
+    Vs <- ms / M * 1000        # cm3 porewater associated with ms_local
     
     # --- congener-specific constants (as you provided)
-    MH2O <- 18.0152; MCO2 <- 44.0094; MW.pcb <- 257.532; R <- 8.3144
+    MH2O <- 18.0152; MCO2 <- 44.0094; MW.pcb <- 257.532
+    R <- 8.3144
     Tst.1 <- 273.15 + 25; Tw.1 <- 273.15 + 20
     
     Kaw <- 0.016011984; dUaw <- 52.59022
@@ -92,13 +93,15 @@ rtm.PCB32 <- function(t, state, parms) {
     Koa <- 10^(7.709482239)
     
     # PUF & SPME
-    Apuf <- 7.07; Vpuf <- 29
+    Apuf <- 7.07
+    Vpuf <- 29
     d <- 0.0213 * 100^3
     Kpuf <- 10^(0.6366 * log10(Koa) - 3.1774)
     Kpuf <- Kpuf * d
     Af <- 0.138
-    Vf <- 0.000000069 * 1000
+    Vf <- 0.000000069 * 1000 # [cm3/cm SPME]
     L  <- 1
+    Vf_tot <- Vf * L
     Kf <- 10^(1.06 * log10(Kow.t) - 1.16)
     
     # Diffusion / transfer coefficients
@@ -119,52 +122,52 @@ rtm.PCB32 <- function(t, state, parms) {
     kaw.o <- (1 / (Kaw.a * Kaw.t) + (1 / Kaw.w))^-1
     kaw.o <- kaw.o * 100 * 60 * 60 * 24   # cm/day
     
-    logksed <- -0.832 * log10(Kow.t) + 1.4
+    logksed <- -0.832 * log10(Kow.t) + 1.34
     ksed <- 10^(logksed)
     
     # sampler rates / kb from parms
-    ko_local <- parms$ko
-    ro_local <- parms$ro
-    kb_local <- parms$kb
-    Kd_local <- parms$Kd
+    ko <- parms$ko
+    ro <- parms$ro
+    kb <- parms$kb
+    Kd <- parms$Kd
     
     # --- state variables (order must match cinit)
     Cs   <- state[1]   # ng/g (solid)
-    Cpw  <- state[2]   # ng/L (porewater)
-    Cw   <- state[3]
-    Cf   <- state[4]
-    Ca   <- state[5]
-    Cpuf <- state[6]
+    # [ng/L] -> [ng/cm3]
+    Cpw  <- state[2] / 1000
+    Cw   <- state[3] / 1000
+    Cf   <- state[4] / 1000
+    Ca   <- state[5] / 1000
+    Cpuf <- state[6] / 1000
     
-    # --- convert cm3 -> L for flux denominators
-    Vs_L  <- Vs  / 1000
-    Vpw_L <- Vpw / 1000
-    Vw_L  <- Vw  / 1000
-    Va_L  <- Va  / 1000
-    Vpuf_L<- Vpuf/ 1000
-    Vf_L  <- Vf  / 1000
-    
-    # --- current Cs -> porewater-equivalent (ng/L)
-    Cs_pw_eq <- Cs * 1000 / Kd_local
+    # --- current Cs -> porewater-equivalent [ng/L] -> [ng/cm3]
+    Cs_pw_eq <- Cs / Kd
     
     # --- ODEs (mass-consistent)
-    dCsdt  <- - ksed * Vs_L / ms_local * (Cs_pw_eq - Cpw)
-    dCpwdt <-   ksed * Vs_L / Vpw_L * (Cs_pw_eq - Cpw) -
-      kpw * Aws / Vpw_L * (Cpw - Cw) -
-      kb_local * Cpw
+    dCsdt  <- - ksed * Vs / ms * (Cs_pw_eq - Cpw)
     
-    dCwdt <- kpw * Aws / Vw_L * (Cpw - Cw) -
-      kaw.o * Aaw / Vw_L * (Cw - Ca / Kaw.t) -
-      ko_local * Af * L / Vw_L * (Cw - Cf / Kf)
+    dCpwdt <-   ksed * Vs / Vpw * (Cs_pw_eq - Cpw) -
+      kpw * Aws / Vpw * (Cpw - Cw) -
+      kb * Cpw
     
-    dCfdt <- ko_local * Af / Vf_L * (Cw - Cf / Kf)
+    dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
+      kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
+      ko * Af * L / Vw * (Cw - Cf / Kf)
     
-    dCadt <- kaw.o * Aaw / Va_L * (Cw - Ca / Kaw.t) -
-      ro_local * Apuf / Va_L * (Ca - Cpuf / Kpuf)
+    dCfdt <- ko * Af / Vf_tot * (Cw - Cf / Kf)
     
-    dCpufdt <- ro_local * Apuf / Vpuf_L * (Ca - Cpuf / Kpuf)
+    dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
+      ro * Apuf / Va * (Ca - Cpuf / Kpuf)
     
-    return(list(c(dCsdt, dCpwdt, dCwdt, dCfdt, dCadt, dCpufdt)))
+    dCpufdt <- ro * Apuf / Vpuf * (Ca - Cpuf / Kpuf)
+    
+    # Convert back to ng/L/day
+    return(list(c(dCsdt,
+                  dCpwdt * 1000,
+                  dCwdt * 1000,
+                  dCfdt * 1000,
+                  dCadt * 1000,
+                  dCpufdt * 1000)))
   })
 }
 
@@ -191,30 +194,36 @@ df.1 <- as.data.frame(out.1)
 colnames(df.1) <- c("time","Cs","Cpw","Cw","Cf","Ca","Cpuf")
 
 msed_g  <- parms$ms
-Vpw_cm3 <- 4; Vw_cm3 <- 100; Va_cm3 <- 125; Vpuf_cm3 <- 29; Vf_cm3 <- 0.000000069 * 1000
+Vpw_cm3 <- 4
+Vw_cm3  <- 100
+Va_cm3  <- 125
+Vpuf_cm3 <- 29
 
-Vpw_L  <- Vpw_cm3  / 1000
-Vw_L   <- Vw_cm3   / 1000
-Va_L   <- Va_cm3   / 1000
+Vpw_L  <- Vpw_cm3 / 1000     # L
+Vw_L   <- Vw_cm3  / 1000
+Va_L   <- Va_cm3  / 1000
 Vpuf_L <- Vpuf_cm3 / 1000
-Vf_L   <- Vf_cm3   / 1000
 
-df.1$ms   <- df.1$Cs   * msed_g
-df.1$mpw  <- df.1$Cpw  * Vpw_L
-df.1$mw   <- df.1$Cw   * Vw_L
-df.1$mf   <- df.1$Cf   * Vf_L    # if Cf is concentration-equivalent; otherwise Cf already mass
-df.1$ma   <- df.1$Ca   * Va_L
-df.1$mpuf <- df.1$Cpuf * Vpuf_L
+# SPME: you supplied Vf as cm3 per cm of fiber
+Vf_cm3_per_cm <- 0.000000069 * 1000  # cm3 per cm (keep your original source)
+fiber_length_cm <- 1                  # exposed fiber length in cm (you used L=1)
+Vf_cm3_total <- Vf_cm3_per_cm * fiber_length_cm
+Vf_L <- Vf_cm3_total / 1000           # L
 
+# ---- compute compartment masses (ng) ----
+# Cs is ng/g, multiply by sediment mass (g) -> ng
+df.1$ms   <- df.1$Cs * msed_g
+
+# aqueous concentrations are ng/L: multiply by corresponding volume (L) -> ng
+df.1$mpw  <- df.1$Cpw  * Vpw_L     # porewater mass (ng)
+df.1$mw   <- df.1$Cw   * Vw_L      # water column mass (ng)
+df.1$mf   <- df.1$Cf   * Vf_L      # SPME total mass (ng)
+df.1$ma   <- df.1$Ca   * Va_L      # air mass (ng)
+df.1$mpuf <- df.1$Cpuf * Vpuf_L    # PUF mass (ng)
+
+# ---- total mass & fractions (guard against zero total) ----
 df.1$mt <- df.1$ms + df.1$mpw + df.1$mw + df.1$mf + df.1$ma + df.1$mpuf
 
-  df.1$fs <- df.1$ms / df.1$mt # [ng]
-  df.1$fpw <- df.1$mpw / df.1$mt # [ng]
-  df.1$fw <- df.1$mw / df.1$mt # [ng]
-  df.1$ff <- df.1$mf / df.1$mt # [ng]
-  df.1$fa <- df.1$ma / df.1$mt # [ng]
-  df.1$fpuf <- df.1$mpuf / df.1$mt # [ng]
-  
   # Ensure observed data is in a tibble
   observed_data <- as_tibble(pcb_combined_control) %>%
     select(time, mf_control, mpuf_control)
