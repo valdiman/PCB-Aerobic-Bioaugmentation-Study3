@@ -75,7 +75,7 @@ rtm.PCB32 <- function(t, state, parms) {
     Aws <- 30     # cm2 sediment-water area
     
     # --- sediment mass (g) and compute Vs (cm3) from porosity + density
-    ms <- parms$ms
+    ms <- 10 # g
     n  <- 0.42
     ds <- 1540        # g/L
     M  <- ds * (1 - n) / n           # g solids per L porewater
@@ -122,8 +122,7 @@ rtm.PCB32 <- function(t, state, parms) {
     kaw.o <- (1 / (Kaw.a * Kaw.t) + (1 / Kaw.w))^-1
     kaw.o <- kaw.o * 100 * 60 * 60 * 24   # cm/day
     
-    logksed <- -0.832 * log10(Kow.t) + 1.34
-    ksed <- 10^(logksed)
+    ksed <- 6.255 # [1/d] from optimization code
     
     # sampler rates / kb from parms
     ko <- parms$ko
@@ -184,7 +183,7 @@ Cpw0 <- Ct * 1000 / Kd   # ng/L
 
 cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
 
-parms <- list(ro = 420, ko = 3, kb = 0, Kd = Kd, ms = 10)
+parms <- list(ro = 420, ko = 3, kb = 0, Kd = Kd)
 
 t.1 <- unique(pcb_combined_control$time)
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)
@@ -193,7 +192,7 @@ out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)
 df.1 <- as.data.frame(out.1)
 colnames(df.1) <- c("time","Cs","Cpw","Cw","Cf","Ca","Cpuf")
 
-msed_g  <- parms$ms
+msed_g  <- 10
 Vpw_cm3 <- 4
 Vw_cm3  <- 100
 Va_cm3  <- 125

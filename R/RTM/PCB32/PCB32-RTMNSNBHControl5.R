@@ -109,6 +109,7 @@ rtm.PCB32 = function(t, state, parms){
   Af <- 0.138 # cm2/cm SPME area
   Vf <- 0.000000069 * 1000 # cm3/cm SPME volume/area
   L <- 1 # cm SPME length normalization to 1 cm
+  Vf_tot <- Vf * L
   Kf <- 10^(1.06 * log10(Kow.t) - 1.16) # PCB 32-SPME equilibrium partition coefficient
   
   # Air & water physical conditions
@@ -137,8 +138,7 @@ rtm.PCB32 = function(t, state, parms){
   kaw.o <- kaw.o * 100 * 60 * 60 * 24 # [cm/d]
   
   # Sediment-porewater radial diffusion model (ksed)
-  logksed <- -0.832 * log10(Kow.t) + 1.4 # [1/d] From Koelmans et al, Environ. Sci. Technol. 2010, 44, 3014–3020
-  ksed <- 10^(logksed) * 1.1 # 10% more
+  ksed <- 6.255 # [1/d] from optimization code
   
   # Add PCB sorption to biochar
   Kbc <- 10^(4.1) # [Lw/KgBC] From Dong et al 2025
@@ -152,43 +152,60 @@ rtm.PCB32 = function(t, state, parms){
   ko <- parms$ko # cm/d mass transfer coefficient to SPME
   ro <- parms$ro # cm/d sampling rate for PUF
   
+  # Sediment-water partition
+  Kd <- parms$Kd
+  
   # derivatives dx/dt are computed below
-  Cs <- state[1]
-  Cpw <- state[2]
-  Cw <- state[3]
-  Cf <- state[4]
-  Ca <- state[5]
-  Cpuf <- state[6]
+  Cs   <- state[1]   # ng/g (solid)
+  # [ng/L] -> [ng/cm3]
+  Cpw  <- state[2] / 1000
+  Cw   <- state[3] / 1000
+  Cf   <- state[4] / 1000
+  Ca   <- state[5] / 1000
+  Cpuf <- state[6] / 1000
   
   # Add sorption effect on Cpw due to biochar
   Cpw <- Cpw * BC
   
   dCsdt <- - ksed * (Cs - Cpw) # Desorption from sediment to porewater [ng/L]
+  
   dCpwdt <- ksed *  Vs / Vpw * (Cs - Cpw) -
     kpw * Aws / Vpw * (Cpw - Cw) -
     kb * Cpw # [ng/L]
+  
   dCwdt <- kpw * Aws / Vw * (Cpw - Cw) -
     kaw.o * Aaw / Vw * (Cw - Ca / Kaw.t) -
     ko * Af * L / Vw * (Cw - Cf / Kf) # [ng/L]
-  dCfdt <- ko * Af / Vf * (Cw - Cf / Kf) # Cw = [ng/L], Cf = [ng/L]
+  
+  dCfdt <- ko * Af / Vf_tot * (Cw - Cf / Kf) # Cw = [ng/L], Cf = [ng/L]
+  
   dCadt <- kaw.o * Aaw / Va * (Cw - Ca / Kaw.t) -
     ro * Apuf / Va * (Ca - Cpuf / Kpuf) # Ca = [ng/L]
+  
   dCpufdt <- ro * Apuf / Vpuf * (Ca - Cpuf / Kpuf) # Ca = [ng/L], Cpuf = [ng/L]
   
   # The computed derivatives are returned as a list
-  return(list(c(dCsdt, dCpwdt, dCwdt, dCfdt, dCadt, dCpufdt)))
+  return(list(c(dCsdt,
+                dCpwdt * 1000,
+                dCwdt * 1000,
+                dCfdt * 1000,
+                dCadt * 1000,
+                dCpufdt * 1000)))
 }
 
 # Initial conditions and run function
-{
-  Ct <- 520 * 1.4 # ng/g PCB 32 sediment concentration av. of site INT 222 (520, stdv = 180 ng/g)
-  n <- 0.42 # [%] porosity
-  ds <- 1540 # [g/L] sediment density
-  M <- ds * (1 - n) / n # [g/L]
-  Cs0 <- Ct * M # [ng/L]
-}
-cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0) # [ng/L]
-parms <- list(ro = 420, ko = 3, kb = 0) # Input 500/540 non-shaking/shaking
+Ct <- 520   # ng/g sediment measured
+E <- 1.74; S <- 1.35; A <- 0; B <- 0.17; V <- 1.6914
+
+logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * V + 0.14
+Koc <- 10^(logKoc)
+foc <- 0.03
+Kd  <- Koc * foc   # L/kg sediment
+
+Cpw0 <- Ct * 1000 / Kd   # ng/L
+
+cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
+parms <- list(ro = 420, ko = 3, Kd = Kd, kb = 0, ms = 10) # Input 500/540 non-shaking/shaking
 t.1 <- unique(pcb_combined_control_5$time)
 # Run the ODE function without specifying parms
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)
@@ -265,7 +282,7 @@ head(out.1)
   
   # Plot
   # Run the model with the new time sequence
-  cinit <- c(Cs = Cs0, Cpw = 0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
+  cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
   t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
   out_daily <- ode(y = cinit, times = t_daily, func = rtm.PCB32,
                    parms = parms)

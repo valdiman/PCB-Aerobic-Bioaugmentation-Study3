@@ -1,8 +1,11 @@
 # Cleaned full script: read observations, define ODE, fit ksed, report results
 # Requires: deSolve, dplyr, tibble
-library(deSolve)
-library(dplyr)
-library(tibble)
+{
+  library(deSolve)
+  library(dplyr)
+  library(tibble)
+}
+
 
 # -------------------------
 # 1) Read & prepare observed data (PCB_32, Control)
@@ -118,29 +121,35 @@ rtm_simple <- function(t, state, parms) {
 #   1) set logKow_val (log10(Kow))
 #   2) set Abraham descriptors (E,S,A,B,Vpar) if you want Kd from Abraham
 #   3) set foc (fraction organic carbon) if using Abraham Koc -> Kd
+# read data
+pc <- read.csv("Data/PhysicalChemicalProperties.csv")
 
-logKow_val <- 5.44         # <- change this for other congeners
-# Abraham descriptors (use congener-specific values if available)
-E <- 1.74; S <- 1.35; A <- 0; B <- 0.17; Vpar <- 1.6914
+pc_row <- pc[pc$congener == pcb.ind, ]
+
+MW.pcb <- pc_row$MW
+Kow <- pc_row$Kow
+dUow <- pc_row$dUow
+Kaw <- pc_row$Kaw
+dUaw <- pc_row$dUaw
+Koa <- pc_row$Koa
+E <- pc_row$E
+S <- pc_row$S
+A <- pc_row$A
+B <- pc_row$B
+V <- pc_row$V
+
 foc <- 0.03                # <- change if you have another foc
 
 # physical constants & temps (usually do not change)
-MH2O <- 18.0152; MCO2 <- 44.0094; MW.pcb <- 257.532
+MH2O <- 18.0152; MCO2 <- 44.0094
 R <- 8.3144
 Tst.1 <- 273.15 + 25; Tw.1 <- 273.15 + 20
 
 # Kow (and temp-corrected Kow)
-Kow <- 10^(logKow_val)
-dUow <- -22.88894
 Kow.t <- Kow * exp(-dUow / R * (1 / Tw.1 - 1 / Tst.1))
 
 # Kaw (air-water) and temp-correction
-Kaw <- 0.016011984
-dUaw <- 52.59022
 Kaw.t <- Kaw * exp(-dUaw / R * (1 / Tw.1 - 1 / Tst.1)) * Tw.1 / Tst.1
-
-# Koa (kept as before)
-Koa <- 10^(7.709482239)
 
 # PUF & SPME parameters
 Apuf <- 7.07
@@ -179,12 +188,12 @@ logksed <- -0.832 * log10(Kow.t) + 1.34
 ksed <- 10^(logksed)
 
 # Kd via Abraham Koc
-logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * Vpar + 0.14
+logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * V + 0.14
 Koc <- 10^(logKoc)
 Kd <- Koc * foc   # L/kg
 
 # quick check print
-cat("Congener summary: logKow=", logKow_val,
+cat("Congener summary: logKow=", log10(Kow),
     "; Kow.t=", signif(Kow.t,6),
     "; Kd=", signif(Kd,6),
     "; kpw=", signif(kpw,6),
@@ -201,7 +210,7 @@ parms_base <- list(
   kpw  = kpw,
   kaw  = kaw,
   kb   = 0,
-  ro   = 420,
+  ro   = 420,          # Initial value
   Kpuf = Kpuf,
   Kaw.t= Kaw.t,
   Af   = Af,
@@ -284,7 +293,6 @@ print(df_diag)
 # inputs (use your values or adjust)
 ksed_fit_day <- ksed_best           # fitted ksed [1/day]
 ksed_koel_day <- parms_base$ksed    # Koelmans ksed [1/day], fallback
-MW.pcb <- 257.532                   # molecular weight of congener (change if needed)
 
 # compute (approx) molecular diffusion in water (m^2/s)
 D_co2_w <- 1.67606e-05              # cm^2/s (your constant)
