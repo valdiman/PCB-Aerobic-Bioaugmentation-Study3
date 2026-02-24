@@ -122,7 +122,7 @@ rtm.PCB32 <- function(t, state, parms) {
     kaw.o <- (1 / (Kaw.a * Kaw.t) + (1 / Kaw.w))^-1
     kaw.o <- kaw.o * 100 * 60 * 60 * 24   # cm/day
     
-    ksed <- 6.255 # [1/d] from optimization code
+    ksed <- 6.228 # [1/d] from optimization code
     
     # sampler rates / kb from parms
     ko <- parms$ko

@@ -12,7 +12,7 @@
 # -------------------------
 exp.data <- read.csv("Data/uncoated_biochar_V2.csv")
 
-pcb.ind <- "PCB_32"
+pcb.ind <- "PCB_4"
 pcbi <- exp.data[, c("Sample_medium", "Experiment", "percent_biochar",
                      "Group", "time", "Replicate", pcb.ind)]
 
@@ -210,7 +210,7 @@ parms_base <- list(
   kpw  = kpw,
   kaw  = kaw,
   kb   = 0,
-  ro   = 420,          # Initial value
+  ro   = 400,          # Initial value
   Kpuf = Kpuf,
   Kaw.t= Kaw.t,
   Af   = Af,
@@ -222,8 +222,10 @@ parms_base <- list(
 # -------------------------
 # 4) Initial conditions & times
 # -------------------------
-Ct <- 520    # ng/g sediment measured
-cinit <- c(Cs = Ct, Cpw = 0, Cw = 0, Ca = 0, Cpuf = 0)
+Ct <- 145    # ng/g sediment measured
+Cpw0 <- Ct * 1000 / Kd   # ng/L
+
+cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Ca = 0, Cpuf = 0)
 times <- sort(unique(c(0, obs_df$time)))
 
 # helper: run model and return df with mpuf (ng)

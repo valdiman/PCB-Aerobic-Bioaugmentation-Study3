@@ -178,7 +178,7 @@ logKoc <- 1.1 * E - 0.72 * S + 0.15 * A - 1.98 * B + 2.28 * V + 0.14
 Koc <- 10^(logKoc)
 foc <- 0.03
 # Add PCB sorption to biochar
-Kbc <- 10^(4.1) # [Lw/KgBC] From Dong et al 2025
+Kbc <- 10^(3.8) # [Lw/KgBC] From Dong et al 2025
 fbc <- 0.05 # 5% of total sediment
 Kd  <- (Koc * foc  + Kbc * fbc) / (1 + fbc) # L/kg sediment
 
@@ -188,7 +188,7 @@ cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
 
 parms <- list(ro = 420, ko = 3, kb = 0, Kd = Kd)
 
-t.1 <- unique(pcb_combined_control$time)
+t.1 <- unique(pcb_combined_control_5$time)
 out.1 <- ode(y = cinit, times = t.1, func = rtm.PCB32, parms = parms)
 
 # ---- post-process masses (ng) ----
@@ -269,8 +269,9 @@ mpuf_r2_value <- mf_r2(grouped_comparison$avg_mpuf_model, grouped_comparison$avg
 # Print R-squared values
 print(paste("R-squared for mf (average): ", mf_r2_value))
 print(paste("R-squared for mpuf (average): ", mpuf_r2_value))
-  
-  # Plot
+
+# Plot
+{  
   # Run the model with the new time sequence
   cinit <- c(Cs = Ct, Cpw = Cpw0, Cw = 0, Cf = 0, Ca = 0, Cpuf = 0)
   t_daily <- seq(0, 130, by = 1)  # Adjust according to your needs
@@ -342,7 +343,7 @@ print(paste("R-squared for mpuf (average): ", mpuf_r2_value))
     theme_bw() +
     theme(legend.title = element_blank())
   
-#}
+}
 
 # Arrange plots side by side
 p.32 <- grid.arrange(p_mf, p_mpuf, ncol = 2)
