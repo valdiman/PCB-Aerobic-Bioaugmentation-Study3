@@ -14,7 +14,8 @@
 }
 
 # Read data ---------------------------------------------------------------
-obs.data <- read.csv("Data/uncoated_biochar_V2.csv")
+# Latest file is version 5
+obs.data <- read.csv("Data/uncoated_biochar_V5.csv")
 
 # Format data -------------------------------------------------------------
 # Select SPME & time series data
@@ -58,7 +59,7 @@ anova_sig <- anova_pvalues %>%
 print(anova_sig)
 
 # Export data
-write.csv(anova_sig, file = "Output/Data/Stat/ANOVA_SPME.csv")
+write.csv(anova_sig, file = "Output/Data/Stat/ANOVA_SPMEV2.csv")
 
 # Tukey's test ------------------------------------------------------------
 # Initialize empty data frame
@@ -102,5 +103,5 @@ tukey_sig_df <- tukey_sig_df %>%
 print(tukey_sig_df)
 
 # Export results
-write.csv(tukey_sig_df, file = "Output/Data/Stat/Tukey_SPME.csv",
+write.csv(tukey_sig_df, file = "Output/Data/Stat/Tukey_SPMEV2.csv",
           row.names = FALSE)
