@@ -83,4 +83,54 @@ fract_bc <- chem.data %>%
 # Export data
 write.csv(fract_bc, file = "Output/Data/EqPModel/fractionbc.csv")
 
+# With biochar 1.5%
+mbc1.5   <- ms * 0.015 # [Kgbc] 1.5% of sediment
+
+fract_bc1.5 <- chem.data %>%
+  mutate(
+    # capacity in each phase in relation to water
+    As    = foc * Koc * ms / Vw,
+    Abc   = Kbc * mbc1.5 / Vw,
+    Aspme = Kspme * Vspme / Vw,
+    Aair  = Kaw * Va / Vw,
+    Apuf  = Kpuf * Kaw * Vpuf / Vw,
+    D     = 1 + As + Abc + Aspme + Aair + Apuf,
+    
+    fractw    = 1 / D,
+    fracts    = As / D,
+    fractbc   = Abc / D,
+    fractspme = Aspme / D,
+    fracta    = Aair / D,
+    fractpuf  = Apuf / D,
+    sumfrac   = fractw + fracts + fractbc + fractspme + fracta + fractpuf) %>%
+  select(congener, fracts, fractbc, fractw, fractspme, fracta, fractpuf, sumfrac)
+
+# Export data
+write.csv(fract_bc1.5, file = "Output/Data/EqPModel/fractionbc1_5.csv")
+
+# With biochar 10%
+mbc10   <- ms * 0.1 # [Kgbc] 10% of sediment
+
+fract_bc10 <- chem.data %>%
+  mutate(
+    # capacity in each phase in relation to water
+    As    = foc * Koc * ms / Vw,
+    Abc   = Kbc * mbc10 / Vw,
+    Aspme = Kspme * Vspme / Vw,
+    Aair  = Kaw * Va / Vw,
+    Apuf  = Kpuf * Kaw * Vpuf / Vw,
+    D     = 1 + As + Abc + Aspme + Aair + Apuf,
+    
+    fractw    = 1 / D,
+    fracts    = As / D,
+    fractbc   = Abc / D,
+    fractspme = Aspme / D,
+    fracta    = Aair / D,
+    fractpuf  = Apuf / D,
+    sumfrac   = fractw + fracts + fractbc + fractspme + fracta + fractpuf) %>%
+  select(congener, fracts, fractbc, fractw, fractspme, fracta, fractpuf, sumfrac)
+
+# Export data
+write.csv(fract_bc10, file = "Output/Data/EqPModel/fractionbc10.csv")
+
 
