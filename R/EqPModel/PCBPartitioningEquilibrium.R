@@ -33,7 +33,7 @@ ms    <- 0.01 # [Kgs]
 mbc   <- ms * 0.05 # [Kgbc] 5% of sediment
 Vw    <- 0.1 # [Lw]
 Vspme_Lspme <- 6.9e-8 # [Lspme/cmspme]
-Lspme <- 1 # [cmspme] considering 1 cm length
+Lspme <- 10 # [cmspme] considering 1 cm length
 Vspme <- Vspme_Lspme * Lspme # [Lspme]
 Va    <- 0.125 # [La]
 Vpuf  <- 0.029 # [Lpuf]
@@ -58,7 +58,7 @@ fract <- chem.data %>%
   select(congener, fracts, fractw, fractspme, fracta, fractpuf, sumfrac)
 
 # Export data
-write.csv(fract, file = "Output/Data/EqPModel/fractionNobc.csv")
+write.csv(fract, file = "Output/Data/EqPModel/fractionNobc10cm.csv")
 
 # With biochar
 fract_bc <- chem.data %>%
@@ -81,7 +81,7 @@ fract_bc <- chem.data %>%
   select(congener, fracts, fractbc, fractw, fractspme, fracta, fractpuf, sumfrac)
 
 # Export data
-write.csv(fract_bc, file = "Output/Data/EqPModel/fractionbc.csv")
+write.csv(fract_bc, file = "Output/Data/EqPModel/fractionbc10cm.csv")
 
 # With biochar 1.5%
 mbc1.5   <- ms * 0.015 # [Kgbc] 1.5% of sediment
@@ -106,7 +106,7 @@ fract_bc1.5 <- chem.data %>%
   select(congener, fracts, fractbc, fractw, fractspme, fracta, fractpuf, sumfrac)
 
 # Export data
-write.csv(fract_bc1.5, file = "Output/Data/EqPModel/fractionbc1_5.csv")
+write.csv(fract_bc1.5, file = "Output/Data/EqPModel/fractionbc1_5_10cm.csv")
 
 # With biochar 10%
 mbc10   <- ms * 0.1 # [Kgbc] 10% of sediment
@@ -131,6 +131,6 @@ fract_bc10 <- chem.data %>%
   select(congener, fracts, fractbc, fractw, fractspme, fracta, fractpuf, sumfrac)
 
 # Export data
-write.csv(fract_bc10, file = "Output/Data/EqPModel/fractionbc10.csv")
+write.csv(fract_bc10, file = "Output/Data/EqPModel/fractionbc10_10cm.csv")
 
 
