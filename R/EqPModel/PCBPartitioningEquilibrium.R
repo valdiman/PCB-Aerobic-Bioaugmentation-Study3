@@ -22,8 +22,10 @@ chem.data <- chem.data %>%
     Kaw = 10^logKaw, # [Lw/La]
     Kow = 10^logKow, # [Lw/Loc]
     Koa = 10^logKoa, # [La/Loc]
-    
     Koc = 10^(0.94*logKow + 0.42), # [Lw/Kgoc]
+    # 2nd method to obtain Koc
+    e = 1.1, s = -0.72, a = 0.15, b = -1.98, v = 2.28, C = 0.14,
+    Koc.2 = 10^(V * v + s * S + a * A + b * B + e * E + C), # log10 Koc/water [Lw/Koc]
     Kspme = 10^(1.06*logKow - 1.16), # [Lw/Lspme]
     Kpuf = 10^(0.6366*logKoa - 3.1774), # [m3a/gpuf]
     Kpuf = Kpuf * 21300, # [La/Lpuf], density of puf in gpuf/m3a
