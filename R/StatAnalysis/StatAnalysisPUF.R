@@ -14,16 +14,22 @@
 }
 
 # Read data ---------------------------------------------------------------
-# Latest file is version 5
+# Latest file is version 5. It includes the biochar_percentage 5% for 90 days.
 obs.data <- read.csv("Data/uncoated_biochar_V5.csv")
 
-# Format data -------------------------------------------------------------
+# Biochar time series analysis --------------------------------------------
+# Format data
 # Select PUF & time series data
 pcbi.puf <- obs.data %>%
-  filter(Sample_medium =="PUF", Experiment =="biochar_timeseries")
+  filter(Sample_medium == "PUF",
+         (Experiment == "biochar_timeseries") |
+           (Experiment == "biochar_percentage" &
+              percent_biochar %in% c(0, 5) &
+              time == 90))
 
-pcbi.puf$Group_biochar <- paste(pcbi.puf$Group,
-                                 pcbi.puf$percent_biochar, sep = "_")
+pcbi.puf$Group_biochar <- paste(pcbi.puf$Group, pcbi.puf$percent_biochar,
+                                sep = "_")
+
 pcbi.puf$Group_biochar <- factor(pcbi.puf$Group_biochar)
 
 # ANOVA -------------------------------------------------------------------
@@ -59,7 +65,7 @@ anova_sig <- anova_pvalues %>%
 print(anova_sig)
 
 # Export data
-write.csv(anova_sig, file = "Output/Data/Stat/ANOVA_PUFV2.csv")
+write.csv(anova_sig, file = "Output/Data/Stat/ANOVA_PUFV3.csv")
 
 # Tukey's test ------------------------------------------------------------
 # Initialize empty data frame
@@ -103,5 +109,5 @@ tukey_sig_df <- tukey_sig_df %>%
 print(tukey_sig_df)
 
 # Export results
-write.csv(tukey_sig_df, file = "Output/Data/Stat/Tukey_PUFV2.csv",
+write.csv(tukey_sig_df, file = "Output/Data/Stat/Tukey_PUFV3.csv",
           row.names = FALSE)
