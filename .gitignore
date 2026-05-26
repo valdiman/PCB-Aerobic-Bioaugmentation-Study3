@@ -31,3 +31,4 @@
 *.qgz
 *.qpt
 rosm.cache/
+.positai
